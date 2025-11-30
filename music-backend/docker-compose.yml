@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # 1. The Frontend Service (Vite + React + Nginx)
+  # frontend:
+  #   build:
+  #     context: ../frontend # Path to the frontend directory
+  #     dockerfile: Dockerfile
+  #   container_name: music_frontend
+  #   ports:
+  #     - "3000:80" # Map host port 3000 to container port 80 (Nginx)
+  #   depends_on:
+  #     - web # Depends on the backend API
+
+  # 2. The Message Broker
+  redis:
+    image: redis:7-alpine
+    container_name: music_redis
+    ports:
+      - "6379:6379"
+
+  # 3. The Flask API (Backend)
+  web:
+    build:
+      context: . # The context is the current directory (music-backend)
+    container_name: music_api
+    command: python app.py
+    ports:
+      # No longer need to expose port 5000 to the host,
+      # as Nginx in the frontend container will proxy requests to it.
+      # You can keep it for direct API access if you want:
+      - "5000:5000" 
+    volumes:
+      # Mount current directory to /app so changes allow live reload
+      # and both containers share the 'uploads' folder
+      - .:/app
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLASK_ENV=development
+    depends_on:
+      - redis
+
+  # 4. The Celery Worker (Heavy Lifting)
+  worker:
+    build:
+      context: .
+    container_name: music_worker
+    # Command to start the Celery worker
+    command: celery -A tasks.celery worker --loglevel=info --concurrency=1
+    volumes:
+      # MUST mount the same volume so it can read files uploaded by 'web'
+      - .:/app
+      # Optional: Persist HuggingFace/Demucs cache to host so models aren't re-downloaded
+      - ./model_cache:/root/.cache 
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
