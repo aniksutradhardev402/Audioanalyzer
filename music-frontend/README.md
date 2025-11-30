@@ -1,16 +1,82 @@
-# React + Vite
+# Frontend - Audio Analyzer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**React + Vite + Tailwind CSS** interactive UI for audio file uploads, analysis visualization, and music insights.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Setup
 
-## React Compiler
+### Prerequisites
+- Node.js 16+
+- npm or yarn
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Installation
 
-## Expanding the ESLint configuration
+```bash
+# Install dependencies
+npm install
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Install Tailwind CSS
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+```
+
+---
+
+## Development
+
+### Start Dev Server
+
+```bash
+npm run dev
+```
+
+Server runs on: `http://localhost:5173`
+
+**Note:** Make sure the backend is running on `http://localhost:5000` before starting frontend
+
+---
+
+## Build
+
+```bash
+npm run build
+```
+
+Production-ready files in `dist/` folder
+
+---
+
+## Key Technologies
+
+- **React 18** - UI library with hooks
+- **Vite** - Lightning-fast build tool
+- **Tailwind CSS** - Utility-first styling
+- **Axios/Fetch** - API communication
+
+---
+
+## Project Structure
+
+```
+src/
+├── components/     # React components
+├── pages/          # Page components
+├── styles/         # CSS/Tailwind styles
+├── App.jsx         # Main app component
+└── main.jsx        # Entry point
+```
+
+---
+
+## API Integration
+
+Frontend communicates with backend via proxy. Vite forwards `/api/` requests to backend.
+
+Example API call:
+```javascript
+fetch('/api/upload', {
+  method: 'POST',
+  body: formData,
+})
+```
