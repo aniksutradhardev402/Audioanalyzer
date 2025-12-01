@@ -4,9 +4,169 @@ import subprocess
 import os
 import json
 from basic_pitch.inference import predict
-from basic_pitch import ICASSP_2022_MODEL_PATH
-import essentia.standard as es
 
+
+
+NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+
+def _build_chord_templates(include_sevenths=True):
+    """
+    Build simple normalized templates for triads (and optionally 7th chords).
+    Returns: dict: chord_name -> np.array(shape=(12,))
+    """
+    templates = {}
+
+    def tpl(root, intervals):
+        v = np.zeros(12, dtype=float)
+        for i in intervals:
+            v[(root + i) % 12] = 1.0
+        return v
+
+    for root in range(12):
+        root_name = NOTES[root]
+
+        # Triads
+        templates[f"{root_name}"]    = tpl(root, [0, 4, 7])   # major
+        templates[f"{root_name}m"]   = tpl(root, [0, 3, 7])   # minor
+        templates[f"{root_name}dim"] = tpl(root, [0, 3, 6])   # diminished
+        templates[f"{root_name}aug"] = tpl(root, [0, 4, 8])   # augmented
+
+        if include_sevenths:
+            templates[f"{root_name}7"]    = tpl(root, [0, 4, 7, 10])  # dominant 7
+            templates[f"{root_name}maj7"] = tpl(root, [0, 4, 7, 11])  # major 7
+            templates[f"{root_name}m7"]   = tpl(root, [0, 3, 7, 10])  # minor 7
+
+    # Normalize for cosine similarity
+    for k, v in templates.items():
+        n = np.linalg.norm(v)
+        if n > 0:
+            templates[k] = v / n
+
+    return templates
+
+
+CHORD_TEMPLATES = _build_chord_templates(include_sevenths=True)
+
+def _enforce_min_duration(chords, min_chord_duration):
+    """
+    Merge very short chord segments into the previous one.
+    This makes chords look more stable in time.
+    """
+    if not chords:
+        return []
+
+    merged = [chords[0]]
+
+    for seg in chords[1:]:
+        dur = seg["end_time"] - seg["start_time"]
+
+        if dur < min_chord_duration:
+            # Too short: merge into previous segment by extending its end
+            merged[-1]["end_time"] = max(merged[-1]["end_time"], seg["end_time"])
+        else:
+            merged.append(seg)
+
+    return merged
+
+def analyze_chords(
+    file_path,
+    hop_length=2048,
+    chord_threshold=0.2,
+    min_chord_duration=0.5,
+    use_hpss=True
+):
+    """
+    Detect chords using Librosa chroma + template matching.
+
+    Returns:
+        List[dict]: [{ "start_time": float, "end_time": float, "chord_name": str }, ...]
+        or [{ "error": str }] on failure.
+    """
+    try:
+        if not os.path.exists(file_path):
+            return [{"error": f"File not found: {file_path}"}]
+
+        # 1. Load
+        y, sr = librosa.load(file_path, mono=True)
+        if y.size == 0:
+            return [{"error": "Audio file appears to be empty."}]
+
+        # 2. HPSS
+        if use_hpss and y.size >= 4096:
+            try:
+                y_harm, _ = librosa.effects.hpss(y)
+            except Exception:
+                y_harm = y
+        else:
+            y_harm = y
+
+        # 3. Chromagram
+        chroma = librosa.feature.chroma_cqt(y=y_harm, sr=sr, hop_length=hop_length)
+        if chroma.shape[1] == 0:
+            return [{"error": "Could not compute chroma (audio too short or silent)."}]
+
+        chroma_norm = chroma / (np.linalg.norm(chroma, axis=0, keepdims=True) + 1e-8)
+
+        # 4. Template matching
+        template_names = list(CHORD_TEMPLATES.keys())
+        template_matrix = np.stack(
+            [CHORD_TEMPLATES[name] for name in template_names],
+            axis=1
+        )  # (12, n_chords)
+
+        sims = chroma_norm.T @ template_matrix  # (n_frames, n_chords)
+        best_idx = np.argmax(sims, axis=1)
+        best_scores = sims[np.arange(sims.shape[0]), best_idx]
+
+        chord_labels = []
+        for score, idx in zip(best_scores, best_idx):
+            if score < chord_threshold:
+                chord_labels.append('N')
+            else:
+                chord_labels.append(template_names[idx])
+
+        # 5. Frames -> times
+        times = librosa.frames_to_time(
+            np.arange(len(chord_labels)),
+            sr=sr,
+            hop_length=hop_length
+        )
+
+        # 6. Group consecutive chords
+        chords = []
+        if len(chord_labels) > 0:
+            last_chord = chord_labels[0]
+            start_t = float(times[0])
+
+            for i in range(1, len(chord_labels)):
+                if chord_labels[i] != last_chord:
+                    if last_chord != 'N':
+                        chords.append({
+                            "start_time": float(start_t),
+                            "end_time": float(times[i]),
+                            "chord_name": last_chord
+                        })
+                    last_chord = chord_labels[i]
+                    start_t = float(times[i])
+
+            if last_chord != 'N':
+                chords.append({
+                    "start_time": float(start_t),
+                    "end_time": float(times[-1]),
+                    "chord_name": last_chord
+                })
+
+        # 7. Smooth: enforce minimum duration
+        chords = _enforce_min_duration(chords, min_chord_duration)
+
+        return chords
+
+    except Exception as e:
+        # Show the real error in your console/logs
+        import traceback
+        traceback.print_exc()
+        return [{"error": f"Chord detection error: {str(e)}"}]
+    
 def analyze_meta(file_path):
     """Extracts high-level metadata: BPM, Key, Loudness, etc."""
     # Load a 60-second mono segment for efficient analysis
@@ -61,54 +221,10 @@ def analyze_meta(file_path):
         "brightness_spectral_centroid": round(avg_spectral_centroid, 2)
     }
 
-def analyze_chords(file_path):
-    """
-    Detects chords using the Essentia library.
-    """
-    try:
-        # Parameters for analysis
-        sample_rate = 44100
-        frame_size = 4096
-        hop_size = 512
 
-        # 1. Load audio
-        audio = es.MonoLoader(filename=file_path, sampleRate=sample_rate)()
 
-        # 2. Set up the frame-based processing pipeline
-        hpcp_extractor = es.HPCP()
-        spectral_peaks = es.SpectralPeaks()
-        spectrum = es.Spectrum()
-        window = es.Windowing(type='blackmanharris62')
-
-        # 3. Iterate through audio frames and extract HPCP features
-        hpcp_frames = []
-        for frame in es.FrameGenerator(audio, frameSize=frame_size, hopSize=hop_size, startFromZero=True):
-            spec = spectrum(window(frame))
-            frequencies, magnitudes = spectral_peaks(spec)
-            hpcp_frames.append(hpcp_extractor(frequencies, magnitudes))
-
-        # 4. Run the chord detection model on the collected HPCP frames
-        chords_list, _ = es.ChordsDetection(hopSize=hop_size)(hpcp_frames)
-        
-        # 5. Post-process to get start and end times
-        chords = []
-        if not chords_list:
-            return [{"error": "No chords found by Essentia."}]
-
-        # Essentia gives a list of chords and we need to calculate their duration
-        frame_duration = hop_size / sample_rate
-
-        for i, chord in enumerate(chords_list):
-            start_time = i * frame_duration
-            end_time = (i + 1) * frame_duration
-            chords.append({"start_time": start_time, "end_time": end_time, "chord_name": chord})
-
-    except Exception as e:
-        print(f"An unexpected error occurred in Essentia chord detection: {e}")
-        return [{"error": "An unexpected error occurred during chord detection."}]
-
-    return chords
-
+    
+    
 def analyze_notes_for_stems(stems_dict):
     """
     Runs note detection on all relevant stems (excluding drums) and returns a
@@ -117,7 +233,7 @@ def analyze_notes_for_stems(stems_dict):
     all_notes = {}
     
     # Define which stems are melodic/harmonic and should be analyzed for notes
-    stems_to_process = ['vocals', 'bass', 'guitar', 'piano', 'other']
+    stems_to_process = ['vocals', 'bass', 'piano', 'guitar', 'other']
     
     for stem_name in stems_to_process:
         if stem_name in stems_dict and os.path.exists(stems_dict[stem_name]):
@@ -155,31 +271,26 @@ def analyze_notes_basic_pitch(file_path):
 
 def separate_stems(file_path, output_dir):
     """
-    Calls Demucs via subprocess to separate audio into 6 stems.
+    Calls Demucs to perform a 6-stem separation using the htdemucs_6s model.
+    This model separates audio into: vocals, bass, drums, piano, guitar, and other.
     """
-    # Demucs command for 6-stem separation (htdemucs_6s model)
-    command = [
-        "demucs",
-        "-n", "htdemucs_6s",
-        "--out", output_dir,
-        file_path
-    ]
-    
-    print(f"Starting Demucs separation for {file_path}...")
-    subprocess.run(command, check=True)
-    
-    filename = os.path.basename(file_path).split('.')[0]
-    model_name = "htdemucs_6s"
-    
-    # Demucs puts files in: output_dir/model_name/filename/
-    stem_path = os.path.join(output_dir, model_name, filename)
+    filename_base = os.path.basename(file_path).split('.')[0]
+    model_6s = "htdemucs_6s"
+    print(f"Starting Demucs 6-stem separation ({model_6s}) for {file_path}...")
+    command_6s = ["demucs", "-n", model_6s, "--out", output_dir, file_path]
+    subprocess.run(command_6s, check=True)
 
+    print("Stem separation complete.")
+
+    # Define path to the output directory of the model
+    path_6s = os.path.join(output_dir, model_6s, filename_base)
+    
+    # Create a dictionary pointing to each separated stem file.
     return {
-
-        "vocals": os.path.join(stem_path, "vocals.wav"),
-        "drums": os.path.join(stem_path, "drums.wav"),
-        "bass": os.path.join(stem_path, "bass.wav"),
-        "piano": os.path.join(stem_path, "piano.wav"),
-        "guitar": os.path.join(stem_path, "guitar.wav"),
-        "other": os.path.join(stem_path, "other.wav"),
+        "vocals": os.path.join(path_6s, "vocals.wav"),
+        "bass": os.path.join(path_6s, "bass.wav"),
+        "drums": os.path.join(path_6s, "drums.wav"),
+        "piano": os.path.join(path_6s, "piano.wav"),
+        "guitar": os.path.join(path_6s, "guitar.wav"),
+        "other": os.path.join(path_6s, "other.wav"),
     }
