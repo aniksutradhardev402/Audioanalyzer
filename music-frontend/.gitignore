@@ -45,3 +45,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python cache
+__pycache__/
+
+# Model cache folder
+model_cache/
