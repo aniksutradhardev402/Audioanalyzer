@@ -39,7 +39,8 @@ export function useAudioAnalyzer(
         window.AudioContext || (window as any).webkitAudioContext;
       const ctx = new AudioCtx();
       const analyser = ctx.createAnalyser();
-      analyser.fftSize = 2048;
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0;
 
       const src = ctx.createMediaElementSource(audio);
       src.connect(analyser);

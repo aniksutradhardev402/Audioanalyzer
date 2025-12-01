@@ -3,7 +3,7 @@ celery
 redis
 flask-cors
 
-
+jams
 librosa
 numpy<2.0.0
 scipy
