@@ -1,0 +1,31 @@
+src
+├─ main.tsx
+├─ App.tsx
+├─ router.tsx
+├─ index.css
+├─ lib
+│  └─ api.ts
+├─ hooks
+│  └─ useUploadAndAnalyze.ts
+├─ types
+│  └─ analysis.ts
+├─ components
+│  ├─ layout
+│  │  ├─ Header.tsx
+│  │  └─ PageShell.tsx
+│  ├─ upload
+│  │  ├─ UploadCard.tsx
+│  │  └─ FeatureGrid.tsx
+│  ├─ analysis
+│  │  ├─ MetadataHeader.tsx
+│  │  ├─ Waveform.tsx
+│  │  ├─ ChordTimeline.tsx
+│  │  ├─ PlayerBar.tsx
+│  │  ├─ StemCard.tsx
+│  │  └─ StemGrid.tsx
+│  └─ common
+│     ├─ Button.tsx
+│     └─ Icon.tsx
+└─ pages
+   ├─ UploadPage.tsx
+   └─ AnalysisPage.tsx

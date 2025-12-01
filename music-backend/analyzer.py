@@ -175,6 +175,7 @@ def separate_stems(file_path, output_dir):
     stem_path = os.path.join(output_dir, model_name, filename)
 
     return {
+
         "vocals": os.path.join(stem_path, "vocals.wav"),
         "drums": os.path.join(stem_path, "drums.wav"),
         "bass": os.path.join(stem_path, "bass.wav"),
