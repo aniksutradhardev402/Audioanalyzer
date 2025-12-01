@@ -18,6 +18,13 @@ services:
     container_name: music_redis
     ports:
       - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          memory: 128M
 
   # 3. The Flask API (Backend)
   web:
@@ -40,6 +47,13 @@ services:
       - FLASK_ENV=development
     depends_on:
       - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          memory: 256M
 
   # 4. The Celery Worker (Heavy Lifting)
   worker:
@@ -58,3 +72,11 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
