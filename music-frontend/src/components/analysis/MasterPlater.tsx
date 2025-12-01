@@ -1,207 +1,139 @@
 import { useMemo, useRef } from 'react';
 import { ChordEvent } from '../../types/analysis';
-import { useAudioAnalyzer } from '../../hooks/useAudioAnalyzer';
 import { getFileUrl } from '../../lib/api';
+import { useAudioAnalyzer } from '../../hooks/useAudioAnalyzer';
+import { useStaticWaveform } from '../../hooks/useStaticWaveform';
+import { Waveform } from './Waveform';
+import { ChordNow } from './ChordNow';
+import { condenseChords, getDistinctChordNames } from '../../utils/chords';
 
 interface Props {
-  /** Raw backend path like "results/.../vocals.wav" */
   audioPath?: string;
   chords: ChordEvent[];
 }
 
-function condenseChords(chords: ChordEvent[]): ChordEvent[] {
-  if (!chords.length) return [];
-  const result: ChordEvent[] = [];
-  for (const c of chords) {
-    const last = result[result.length - 1];
-    if (last && last.chord_name === c.chord_name) {
-      last.end_time = c.end_time;
-    } else {
-      result.push({ ...c });
-    }
-  }
-  return result;
-}
-
 export function MasterPlayer({ audioPath, chords }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const url = getFileUrl(audioPath ?? null); // 👈 ALWAYS via getFileUrl
-  const analysis = useAudioAnalyzer(audioRef, { fftSize: 2048 });
+  const url = useMemo(() => getFileUrl(audioPath || null), [audioPath]);
 
-  const totalDuration =
-    analysis.duration || (chords.length ? chords[chords.length - 1].end_time : 0);
+  const analysis = useAudioAnalyzer(audioRef);
+  const staticWaveform = useStaticWaveform(url, 600);
 
-  const condensedChords = useMemo(
+  const condensed = useMemo(
     () => condenseChords(chords),
     [chords],
   );
+  const distinctChordNames = useMemo(
+    () => getDistinctChordNames(condensed),
+    [condensed],
+  );
+
+  const duration =
+    analysis.duration ||
+    (condensed.length
+      ? condensed[condensed.length - 1].end_time
+      : 0);
 
   const activeChordIndex = useMemo(() => {
-    if (!condensedChords.length || !totalDuration) return -1;
+    if (!condensed.length || !duration) return -1;
     const t = analysis.currentTime;
-    return condensedChords.findIndex(
+    return condensed.findIndex(
       (c) => t >= c.start_time && t < c.end_time,
     );
-  }, [condensedChords, analysis.currentTime, totalDuration]);
+  }, [condensed, analysis.currentTime, duration]);
 
-  const waveformSamples = useMemo(() => {
-    const td = analysis.timeDomain;
-    if (!td) return null;
+  const activeChordName =
+    activeChordIndex >= 0 ? condensed[activeChordIndex].chord_name : null;
 
-    const bars = 160;
-    const step = Math.max(1, Math.floor(td.length / bars));
-
-    return Array.from({ length: bars }).map((_, i) => {
-      const idx = i * step;
-      return Math.abs(td[idx]);
-    });
-  }, [analysis.timeDomain]);
-
-  const progressPercent =
-    totalDuration > 0 ? (analysis.currentTime / totalDuration) * 100 : 0;
+  const seekTo = (time: number) => {
+    const el = audioRef.current;
+    if (!el || !duration) return;
+    const clamped = Math.max(0, Math.min(time, duration));
+    el.currentTime = clamped;
+  };
 
   const togglePlay = () => {
     const el = audioRef.current;
-    if (!el || !url) return;
-
+    if (!el) return;
     if (el.paused) {
-      el.play().catch((e) => console.error('Play failed', e));
+      el.play().catch((e) => console.error('play failed', e));
     } else {
       el.pause();
     }
   };
 
-  const currentChord =
-    activeChordIndex >= 0 ? condensedChords[activeChordIndex].chord_name : '—';
+  const formatted = (t: number) => {
+    if (!Number.isFinite(t)) return '00:00.0';
+    const mins = Math.floor(t / 60);
+    const secs = Math.floor(t % 60);
+    const tenths = Math.floor((t * 10) % 10);
+    return `${mins.toString().padStart(2, '0')}:${secs
+      .toString()
+      .padStart(2, '0')}.${tenths}`;
+  };
 
   return (
     <section className="mb-6 rounded-3xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl shadow-slate-950/80">
       <div className="mb-3 flex items-center justify-between text-[11px] uppercase tracking-wide text-slate-400">
         <span>Master</span>
         <span>
-          {totalDuration
-            ? `${analysis.currentTime.toFixed(1)} / ${totalDuration.toFixed(1)}s`
-            : '00.0 / 00.0s'}
+          {formatted(analysis.currentTime)} / {formatted(duration)}
         </span>
       </div>
 
-      {/* Waveform */}
-      <div className="relative mb-4 h-24 overflow-hidden rounded-2xl bg-slate-950/80 px-2 py-6">
-        <div className="flex h-full items-center gap-[1px]">
-          {waveformSamples
-            ? waveformSamples.map((v, i) => (
-                <div
-                  key={i}
-                  className="w-[2px] rounded-full bg-cyan-500/80"
-                  style={{
-                    height: `${10 + v * 80}%`,
-                    opacity: 0.4 + v * 0.6,
-                  }}
-                />
-              ))
-            : Array.from({ length: 120 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="w-[2px] rounded-full bg-slate-700/50"
-                  style={{
-                    height: `${30 + 40 * Math.abs(Math.sin(i * 0.25))}%`,
-                  }}
-                />
-              ))}
+      {/* SCROLLABLE WAVEFORM */}
+      <Waveform
+        samples={staticWaveform}
+        duration={duration}
+        currentTime={analysis.currentTime}
+        onSeek={seekTo}
+      />
+
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={togglePlay}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/30"
+        >
+          {analysis.isPlaying ? (
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
+            </svg>
+          ) : (
+            <svg
+              className="ml-[1px] h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M7 5v14l12-7z" />
+            </svg>
+          )}
+        </button>
+
+        <div className="text-[11px] text-slate-400">
+          <div>{analysis.isPlaying ? 'Playing' : 'Paused'}</div>
+          <div>Click waveform or chord to jump</div>
         </div>
-        <div
-          className="pointer-events-none absolute inset-y-3 w-[2px] rounded-full bg-white/80 shadow-[0_0_12px_rgba(255,255,255,0.7)]"
-          style={{ left: `${progressPercent}%` }}
-        />
       </div>
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-center">
-        {/* Transport + native controls (visible for now) */}
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-          <button
-            type="button"
-            onClick={togglePlay}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/30"
-            disabled={!url}
-          >
-            {analysis.isPlaying ? (
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
-              </svg>
-            ) : (
-              <svg
-                className="ml-[2px] h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M7 5v14l12-7z" />
-              </svg>
-            )}
-          </button>
+      {/* hidden audio element */}
+      <audio
+        ref={audioRef}
+        src={url || undefined}
+        preload="auto"
+        crossOrigin="anonymous"
+        className="hidden"
+      />
 
-          {url ? (
-            <audio
-              ref={audioRef}
-              src={url}
-              preload="auto"
-              controls
-              muted={false}
-              crossOrigin='anonymous'
-
-              className="w-full max-w-xs text-[11px] text-slate-200"
-            />
-          ) : (
-            <p className="text-[11px] text-slate-500">
-              No master audio available.
-            </p>
-          )}
-
-          <div className="text-[11px] text-slate-400">
-            <div>{analysis.isPlaying ? 'Playing' : 'Paused'}</div>
-            <div>Current chord: {currentChord}</div>
-          </div>
-        </div>
-
-        {/* Chords */}
-        <div className="mt-2 flex-1 rounded-2xl bg-slate-950/70 p-2 text-[11px] text-slate-300 md:mt-0">
-          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-            Chords
-          </div>
-          {condensedChords.length ? (
-            <div className="relative flex h-8 overflow-hidden rounded-xl bg-slate-900">
-              {condensedChords.map((c, idx) => {
-                const width =
-                  totalDuration > 0
-                    ? ((c.end_time - c.start_time) / totalDuration) * 100
-                    : 0;
-                const active = idx === activeChordIndex;
-
-                return (
-                  <div
-                    key={`${c.chord_name}-${idx}`}
-                    className={`flex items-center justify-center border-r border-slate-800 text-[10px] ${
-                      active
-                        ? 'bg-cyan-500 text-slate-950 font-semibold'
-                        : 'bg-slate-900 text-slate-200'
-                    }`}
-                    style={{ width: `${Math.max(width, 2)}%` }}
-                  >
-                    {c.chord_name}
-                  </div>
-                );
-              })}
-              <div
-                className="pointer-events-none absolute inset-y-1 w-[2px] rounded-full bg-white/80 opacity-70"
-                style={{ left: `${progressPercent}%` }}
-              />
-            </div>
-          ) : (
-            <div className="rounded-xl bg-slate-900 px-3 py-2 text-[11px] text-slate-400">
-              Chord detection unavailable for this track.
-            </div>
-          )}
-        </div>
-      </div>
+      {/* CHORDIFY-LIKE ACTIVE CHORD IN CENTER */}
+      <ChordNow
+        activeChord={activeChordName}
+        distinctChords={distinctChordNames}
+        onSelectChord={(name) => {
+          const first = condensed.find((c) => c.chord_name === name);
+          if (first) seekTo(first.start_time);
+        }}
+      />
     </section>
   );
 }
