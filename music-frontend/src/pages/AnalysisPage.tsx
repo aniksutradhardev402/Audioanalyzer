@@ -134,6 +134,7 @@ export function AnalysisPage() {
         chords={result.chords}
         isStemSource={isStemSource}
         stemLabel={isStemSource ? waveformSource.name : undefined}
+        notes={result.notes}                   // 👈 NEW
         onShowMaster={
           isStemSource
             ? () =>

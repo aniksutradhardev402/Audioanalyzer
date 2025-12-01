@@ -1,18 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChordEvent } from '../../types/analysis';
+import { useMemo, useRef } from 'react';
+import { ChordEvent, StemName, NoteEvent } from '../../types/analysis';
 import { getFileUrl } from '../../lib/api';
 import { useAudioAnalyzer } from '../../hooks/useAudioAnalyzer';
 import { useStaticWaveform } from '../../hooks/useStaticWaveform';
 import { Waveform } from './Waveform';
 import { ChordNow } from './ChordNow';
+import { NotesDetector } from './NotesDetector';
 import { condenseChords, getDistinctChordNames } from '../../utils/chords';
-import { detectNoteFromAnalysis } from '../../utils/notes';
+import { getNoteAtTime, midiToNoteName } from '../../utils/notes';
 
 interface Props {
   audioPath?: string | null;
   chords: ChordEvent[];
   isStemSource?: boolean;
-  stemLabel?: string;
+  stemLabel?: StemName; // we pass StemName from AnalysisPage
+  notes?: Partial<Record<StemName | 'master', NoteEvent[]>>;
   onShowMaster?: () => void;
 }
 
@@ -21,6 +23,7 @@ export function MasterPlayer({
   chords,
   isStemSource = false,
   stemLabel,
+  notes,
   onShowMaster,
 }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -79,38 +82,44 @@ export function MasterPlayer({
       .padStart(2, '0')}.${tenths}`;
   };
 
-  // ---- UNIVERSAL NOTE DETECTOR ----
+  // ---- NOTE SELECTION FROM BACKEND DATA ----
 
-  const [note, setNote] = useState<string | null>(null);
-  const lastSecRef = useRef<number>(-1);
-
-  // which sources should show a note?
-  const noteSourceKey = isStemSource
-    ? (stemLabel ?? '').toLowerCase()
+  // Decide which note list to use:
+  // - if stem source: that stem's notes
+  // - if master: notes.master if present, else undefined
+  const activeSourceKey: StemName | 'master' | null = isStemSource
+    ? stemLabel ?? null
     : 'master';
 
-  const shouldShowNote =
-    noteSourceKey === 'master' ||
-    noteSourceKey === 'vocals' ||
-    noteSourceKey === 'bass' ||
-    noteSourceKey === 'piano' ||
-    noteSourceKey === 'other';
+  // Only show notes for master, vocals, bass, piano, guitar, other (not drums)
+  const noteVisible =
+    activeSourceKey === 'master' ||
+    activeSourceKey === 'vocals' ||
+    activeSourceKey === 'bass' ||
+    activeSourceKey === 'piano' ||
+    activeSourceKey === 'guitar' ||
+    activeSourceKey === 'other';
 
-  useEffect(() => {
-    if (!shouldShowNote || !analysis.isPlaying) return;
-    const sec = Math.floor(analysis.currentTime);
-    if (sec === lastSecRef.current) return;
-    lastSecRef.current = sec;
+  const activeNotes: NoteEvent[] | undefined =
+    noteVisible && activeSourceKey && notes
+      ? (notes[activeSourceKey] as NoteEvent[] | undefined)
+      : undefined;
 
-    const detected = detectNoteFromAnalysis(analysis);
-    if (detected) setNote(detected);
-  }, [
-    analysis.currentTime,
-    analysis.frequency,
-    analysis.isPlaying,
-    analysis.sampleRate,
-    shouldShowNote,
-  ]);
+  const currentNoteEvent =
+    noteVisible && activeNotes
+      ? getNoteAtTime(analysis.currentTime, activeNotes)
+      : null;
+
+  const currentNoteName = currentNoteEvent
+    ? midiToNoteName(currentNoteEvent.pitch)
+    : null;
+
+  const noteLabel =
+    activeSourceKey === 'master'
+      ? 'Master'
+      : activeSourceKey
+      ? activeSourceKey.charAt(0).toUpperCase() + activeSourceKey.slice(1)
+      : '';
 
   return (
     <section className="mb-8 rounded-[32px] border border-[#353f51] bg-[#3d4657] p-5 text-[#e4ebff] shadow-[0_28px_45px_rgba(0,0,0,0.75)]">
@@ -140,7 +149,7 @@ export function MasterPlayer({
         </div>
       </div>
 
-      {/* main waveform panel */}
+      {/* main waveform */}
       <Waveform
         samples={staticWaveform}
         duration={duration}
@@ -148,7 +157,7 @@ export function MasterPlayer({
         onSeek={seekTo}
       />
 
-      {/* transport + note badge row */}
+      {/* transport + note detector */}
       <div className="mt-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <button
@@ -177,15 +186,11 @@ export function MasterPlayer({
           </div>
         </div>
 
-        {/* universal note detector (bottom-right) */}
-        {shouldShowNote && (
-          <div className="flex items-center gap-2 text-[11px] text-[#c1cadf]">
-            <span className="uppercase tracking-wide">Note</span>
-            <div className="flex h-7 min-w-[40px] items-center justify-center rounded-full bg-[#050812] px-3 text-xs font-semibold text-[#00d6d6] shadow-[0_0_18px_rgba(0,214,214,0.55)]">
-              {note ?? '—'}
-            </div>
-          </div>
-        )}
+        <NotesDetector
+          visible={noteVisible}
+          sourceLabel={noteLabel}
+          noteName={currentNoteName}
+        />
       </div>
 
       {/* hidden audio element */}
