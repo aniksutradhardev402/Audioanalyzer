@@ -1,6 +1,19 @@
 /* Tailwind v4 layering */
 @import "tailwindcss";
+html,
+body,
+#root {
+  height: 100%;
+}
 
+/* Main app background – tweak this hex to your "original" */
+body {
+  margin: 0;
+  background-color: #070b17; /* deep navy / near-black */
+  color: #e5ecff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, Ubuntu, 'Helvetica Neue', sans-serif;
+}
 /* Design tokens using @theme */
 @theme {
   /* Light mode tokens */

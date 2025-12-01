@@ -2,18 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 
 export interface AnalyzerState {
   timeDomain: Float32Array | null;
+  frequency: Uint8Array | null;
+  sampleRate: number;
   currentTime: number;
   duration: number;
   isPlaying: boolean;
 }
 
-// ✅ One analyser bundle per AUDIO ELEMENT
-const ANALYSER_MAP = new WeakMap<
+// One analyser per audio element (no InvalidStateError)
+const ANALYSERS = new WeakMap<
   HTMLMediaElement,
-  {
-    ctx: AudioContext;
-    analyser: AnalyserNode;
-  }
+  { ctx: AudioContext; analyser: AnalyserNode }
 >();
 
 export function useAudioAnalyzer(
@@ -22,6 +21,8 @@ export function useAudioAnalyzer(
   const rafRef = useRef<number>(null);
   const [state, setState] = useState<AnalyzerState>({
     timeDomain: null,
+    frequency: null,
+    sampleRate: 0,
     currentTime: 0,
     duration: 0,
     isPlaying: false,
@@ -31,34 +32,35 @@ export function useAudioAnalyzer(
     const audio = audioRef.current;
     if (!audio) return;
 
-    let bundle = ANALYSER_MAP.get(audio);
+    let bundle = ANALYSERS.get(audio);
 
-    // ✅ Create ONLY ONCE per audio element
     if (!bundle) {
       const AudioCtx =
         window.AudioContext || (window as any).webkitAudioContext;
-
       const ctx = new AudioCtx();
       const analyser = ctx.createAnalyser();
-      analyser.fftSize = 4096;
+      analyser.fftSize = 2048;
 
-      const source = ctx.createMediaElementSource(audio);
-      source.connect(analyser);
+      const src = ctx.createMediaElementSource(audio);
+      src.connect(analyser);
       analyser.connect(ctx.destination);
 
       bundle = { ctx, analyser };
-      ANALYSER_MAP.set(audio, bundle);
+      ANALYSERS.set(audio, bundle);
     }
 
     const { ctx, analyser } = bundle;
-
-    const buffer = new Float32Array(analyser.fftSize);
+    const freqArr = new Uint8Array(analyser.frequencyBinCount);
+    const timeArr = new Float32Array(analyser.fftSize);
 
     const tick = () => {
-      analyser.getFloatTimeDomainData(buffer);
+      analyser.getByteFrequencyData(freqArr);
+      analyser.getFloatTimeDomainData(timeArr);
 
       setState({
-        timeDomain: buffer.slice(),
+        timeDomain: timeArr.slice(),
+        frequency: freqArr.slice(),
+        sampleRate: ctx.sampleRate,
         currentTime: audio.currentTime || 0,
         duration: audio.duration || 0,
         isPlaying: !audio.paused,
@@ -68,7 +70,9 @@ export function useAudioAnalyzer(
     };
 
     const onPlay = async () => {
-      if (ctx.state === 'suspended') await ctx.resume();
+      if (ctx.state === 'suspended') {
+        await ctx.resume().catch(() => {});
+      }
     };
 
     audio.addEventListener('play', onPlay);
@@ -77,7 +81,7 @@ export function useAudioAnalyzer(
     return () => {
       audio.removeEventListener('play', onPlay);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      // ❗ DO NOT close AudioContext (shared & reused)
+      // don't close ctx – reused
     };
   }, [audioRef]);
 

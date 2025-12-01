@@ -1,5 +1,4 @@
-import { ChordDiagramCard } from './ChordDiagramCard';
-
+// src/components/analysis/ChordNow.tsx
 interface ChordNowProps {
   activeChord: string | null;
   distinctChords: string[];
@@ -13,7 +12,7 @@ export function ChordNow({
 }: ChordNowProps) {
   if (!distinctChords.length) {
     return (
-      <div className="mt-4 rounded-2xl bg-slate-950/70 px-3 py-2 text-xs text-slate-400">
+      <div className="mt-4 rounded-[22px] border border-[#263040] bg-[#111726] px-4 py-3 text-xs text-[#a9b4c9]">
         Chord detection unavailable for this track.
       </div>
     );
@@ -25,32 +24,40 @@ export function ChordNow({
       : distinctChords[0];
 
   return (
-    <div className="mt-4 rounded-3xl bg-slate-950/70 p-3">
-      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-        Chord Diagrams
+    <div className="mt-4 rounded-[28px] border border-[#263040] bg-[#141b2b] p-4">
+      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#a9b4c9]">
+        Chords
       </div>
 
-      {/* big current chord in the middle */}
-      <div className="mb-3 flex justify-center">
-        <ChordDiagramCard
-          name={current}
-          active
-          size="lg"
-          onClick={() => onSelectChord(current)}
-        />
+      {/* current chord name in the centre */}
+      <div className="mb-4 flex justify-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#050812] text-base font-bold text-[#00d6d6] shadow-[0_0_40px_rgba(0,214,214,0.55)]">
+          {current}
+        </div>
       </div>
 
-      {/* strip of all distinct chords, chips style */}
-      <div className="flex flex-wrap gap-2">
-        {distinctChords.map((name) => (
-          <ChordDiagramCard
-            key={name}
-            name={name}
-            active={name === current}
-            size="sm"
-            onClick={() => onSelectChord(name)}
-          />
-        ))}
+      {/* distinct chord list as pills */}
+      <div className="flex flex-wrap gap-8 px-2">
+        {distinctChords.map((name) => {
+          const active = name === current;
+          return (
+            <button
+              key={name}
+              type="button"
+              onClick={() => onSelectChord(name)}
+              className={`
+                rounded-full border px-4 py-1 text-[11px] font-semibold transition-colors
+                ${
+                  active
+                    ? 'border-[#00d6d6] bg-[#0d2028] text-[#e7f9ff] shadow-[0_0_0_1px_rgba(0,214,214,0.6)]'
+                    : 'border-[#303b4d] bg-[#151f30] text-[#d0d8e8] hover:border-[#00d6d6] hover:text-[#e7f9ff]'
+                }
+              `}
+            >
+              {name}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
