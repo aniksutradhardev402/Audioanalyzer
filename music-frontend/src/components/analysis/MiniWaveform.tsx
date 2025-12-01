@@ -30,13 +30,21 @@ export function MiniWaveform({ analysis }: MiniWaveformProps) {
   );
 
   return (
-    <div className="flex h-10 items-center gap-[2px] overflow-hidden rounded-lg bg-slate-950/70 px-2">
+    <div
+      className={`
+        flex h-10 items-center gap-[2px] overflow-hidden rounded-lg px-2
+        ${analysis.isPlaying ? 'bg-slate-950/80 shadow-[0_0_12px_rgba(34,211,238,0.45)]' : 'bg-slate-950/60'}
+      `}
+    >
       {samples.map((v, i) => (
         <div
           key={i}
-          className="w-[2px] rounded-full bg-cyan-400/80"
+          className="w-[2px] rounded-full"
           style={{
             height: `${10 + v * 90}%`,
+            background: analysis.isPlaying
+              ? 'rgba(34,211,238,0.95)' // brighter cyan when playing
+              : 'rgba(148,163,184,0.8)', // slate when idle
             opacity: 0.5 + v * 0.5,
           }}
         />
