@@ -1,8 +1,8 @@
 import { useRef } from 'react';
 import { StemName } from '../../types/analysis';
 import { getFileUrl } from '../../lib/api';
-import { useAudioAnalyzer } from '../../hooks/useAudioAnalyzer';
-import { MiniSpectrum } from './MiniSpectrum';
+import { useAudioAnalyzer, AnalyzerState } from '../../hooks/useAudioAnalyzer';
+import { MiniWaveform } from './MiniWaveform';
 
 interface Props {
   stemName: StemName;
@@ -20,8 +20,8 @@ const LABELS: Record<StemName, string> = {
 
 export function StemCard({ stemName, path }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const url = getFileUrl(path ?? null); // 👈 ALWAYS via getFileUrl
-  const analysis = useAudioAnalyzer(audioRef, { fftSize: 1024 });
+  const url = path ? getFileUrl(path) : null;
+  const analysis: AnalyzerState = useAudioAnalyzer(audioRef);
 
   return (
     <div className="flex flex-col rounded-2xl border border-slate-800 bg-slate-900/70 p-4 text-xs shadow-md shadow-slate-950/70">
@@ -49,6 +49,7 @@ export function StemCard({ stemName, path }: Props) {
         )}
       </div>
 
+      {/* level bar */}
       <div className="mt-4 flex items-center gap-3">
         <span className="text-[11px] text-slate-500">Level</span>
         <div className="flex-1">
@@ -64,8 +65,9 @@ export function StemCard({ stemName, path }: Props) {
         </div>
       </div>
 
+      {/* mini waveform */}
       <div className="mt-4">
-        <MiniSpectrum analysis={analysis} />
+        <MiniWaveform analysis={analysis} />
       </div>
 
       {url ? (

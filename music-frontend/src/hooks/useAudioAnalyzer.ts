@@ -1,86 +1,64 @@
 import { useEffect, useRef, useState } from 'react';
 
-export interface AudioAnalysisData {
+export interface AnalyzerState {
   timeDomain: Float32Array | null;
-  frequency: Uint8Array | null;
   currentTime: number;
   duration: number;
   isPlaying: boolean;
 }
 
-const mediaAnalyzers = new WeakMap<
+// ✅ One analyser bundle per AUDIO ELEMENT
+const ANALYSER_MAP = new WeakMap<
   HTMLMediaElement,
-  { ctx: AudioContext; analyser: AnalyserNode }
+  {
+    ctx: AudioContext;
+    analyser: AnalyserNode;
+  }
 >();
 
 export function useAudioAnalyzer(
   audioRef: React.RefObject<HTMLAudioElement | null>,
-  options?: { fftSize?: number },
-): AudioAnalysisData {
-  const [data, setData] = useState<AudioAnalysisData>({
+): AnalyzerState {
+  const rafRef = useRef<number>(null);
+  const [state, setState] = useState<AnalyzerState>({
     timeDomain: null,
-    frequency: null,
     currentTime: 0,
     duration: 0,
     isPlaying: false,
   });
 
-  const rafRef = useRef<number | null>(null);
-
   useEffect(() => {
-    const el = audioRef.current;
-    if (!el) return;
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    let mounted = true;
+    let bundle = ANALYSER_MAP.get(audio);
 
-    let ctx: AudioContext;
-    let analyser: AnalyserNode;
-
-    const existing = mediaAnalyzers.get(el);
-    if (existing) {
-      ctx = existing.ctx;
-      analyser = existing.analyser;
-    } else {
+    // ✅ Create ONLY ONCE per audio element
+    if (!bundle) {
       const AudioCtx =
         window.AudioContext || (window as any).webkitAudioContext;
-      ctx = new AudioCtx();
 
-      analyser = ctx.createAnalyser();
-      analyser.fftSize = options?.fftSize ?? 2048;
+      const ctx = new AudioCtx();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 4096;
 
-      const source = ctx.createMediaElementSource(el);
+      const source = ctx.createMediaElementSource(audio);
       source.connect(analyser);
       analyser.connect(ctx.destination);
 
-      mediaAnalyzers.set(el, { ctx, analyser });
+      bundle = { ctx, analyser };
+      ANALYSER_MAP.set(audio, bundle);
     }
 
-    const handlePlay = async () => {
-      if (ctx.state === 'suspended') {
-        try {
-          await ctx.resume();
-        } catch (e) {
-          console.error('AudioContext resume failed', e);
-        }
-      }
-    };
+    const { ctx, analyser } = bundle;
 
-    el.addEventListener('play', handlePlay);
-
-    const freqArray = new Uint8Array(analyser.frequencyBinCount);
-    const timeArray = new Float32Array(analyser.fftSize);
+    const buffer = new Float32Array(analyser.fftSize);
 
     const tick = () => {
-      if (!mounted || !audioRef.current) return;
+      analyser.getFloatTimeDomainData(buffer);
 
-      analyser.getByteFrequencyData(freqArray);
-      analyser.getFloatTimeDomainData(timeArray);
-
-      const audio = audioRef.current;
-
-      setData({
-        timeDomain: timeArray.slice(0),
-        frequency: freqArray.slice(0),
+      setState({
+        timeDomain: buffer.slice(),
         currentTime: audio.currentTime || 0,
         duration: audio.duration || 0,
         isPlaying: !audio.paused,
@@ -89,14 +67,19 @@ export function useAudioAnalyzer(
       rafRef.current = requestAnimationFrame(tick);
     };
 
+    const onPlay = async () => {
+      if (ctx.state === 'suspended') await ctx.resume();
+    };
+
+    audio.addEventListener('play', onPlay);
     rafRef.current = requestAnimationFrame(tick);
 
     return () => {
-      mounted = false;
-      el.removeEventListener('play', handlePlay);
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      audio.removeEventListener('play', onPlay);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      // ❗ DO NOT close AudioContext (shared & reused)
     };
-  }, [audioRef, options?.fftSize]);
+  }, [audioRef]);
 
-  return data;
+  return state;
 }
