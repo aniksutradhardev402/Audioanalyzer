@@ -1,3 +1,4 @@
+
 export interface TrackMetadata {
   bpm: number;
   duration_seconds: number;
@@ -27,6 +28,12 @@ export type StemName =
   | 'piano'
   | 'guitar'
   | 'other';
+export interface NoteEvent {
+  pitch: number;        // MIDI pitch
+  start: number;        // seconds
+  end: number;          // seconds
+  velocity: number;     // 0..1
+}
 
 export type StemsMap = Record<StemName, string | undefined>;
 
@@ -35,9 +42,9 @@ export type NotesByStem = Partial<Record<StemName, NoteEvent[]>>;
 export interface AnalysisResult {
   metadata: TrackMetadata;
   chords: ChordEvent[];
-  notes: NotesByStem;
-  stems: StemsMap;
+   stems: StemsMap;
   song_id: string;
+   notes?: Partial<Record<StemName | 'master', NoteEvent[]>>;
 }
 
 export interface UploadResponse {
