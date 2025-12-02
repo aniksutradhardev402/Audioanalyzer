@@ -34,13 +34,20 @@ def get_status(task_id):
         "task_id": task_id,
         "state": task_result.state,
     }
+
+    # task_result.info may be a dict when update_state was called in the task
+    info = task_result.info
     if task_result.state == 'PENDING':
-        response["status"] = "Pending..."
+        response["info"] = {"status": "Pending...", "progress": 0}
     elif task_result.state != 'FAILURE':
-        response["status"] = str(task_result.info)
+        # If info is a dict (meta), forward it so the frontend can show progress / partials
+        if isinstance(info, dict):
+            response["info"] = info
+        else:
+            response["info"] = {"status": str(info)}
     else:
-        response["status"] = "Something went wrong"
-        response["error"] = str(task_result.info)
+        # Failure
+        response["info"] = {"status": "Something went wrong", "error": str(info)}
         
     return jsonify(response)
 

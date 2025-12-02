@@ -53,10 +53,16 @@ export interface UploadResponse {
 }
 
 export type TaskState = 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILURE';
+export interface StatusInfo {
+  status?: string; // human readable status message
+  progress?: number; // 0..100
+  step?: string; // short step id e.g. 'separate_stems'
+  partial?: Partial<AnalysisResult> | Record<string, unknown>; // small partial results like metadata/stems
+  error?: string;
+}
 
 export interface StatusResponse {
   task_id: string;
   state: TaskState;
-  status: string;
-  error?: string;
+  info?: StatusInfo;
 }
