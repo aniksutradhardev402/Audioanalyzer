@@ -20,3 +20,4 @@ sdist/
 music-backend/results/
 music-backend/model_cache/
 music-backend/uploads/
+*.wav
