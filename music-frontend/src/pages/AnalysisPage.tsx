@@ -2,7 +2,9 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getResult, getStatus } from '../lib/api';
-import { AnalysisResult, StemName } from '../types/analysis';
+import React from 'react';
+import { AnalysisResult, StemName, StatusInfo } from '../types/analysis';
+import AnalysisLoading from '../components/analysis/AnalysisLoading';
 // import { MasterPlayer } from '../components/analysis/MasterPlater';
 // import { StemGrid } from '../components/analysis/StemGrid';
 // import { MetadataHeader } from '../components/analysis/MetaHeader';
@@ -19,6 +21,7 @@ export function AnalysisPage() {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [statusInfo, setStatusInfo] = useState<StatusInfo | null>(null);
   const [waveformSource, setWaveformSource] = useState<WaveformSource | null>(
     null,
   );
@@ -34,10 +37,20 @@ export function AnalysisPage() {
     let cancelled = false;
     let pollTimer: number | undefined;
 
+    // adaptive backoff
+    let attempts = 0;
+
     const poll = async () => {
       try {
         setLoadState((prev) => (prev === 'loading' ? 'loading' : 'polling'));
         const status = await getStatus(taskId);
+        const info = status.info ?? { status: '' };
+        setStatusInfo(info as StatusInfo);
+
+        if (info.partial) {
+          // merge partial into result so UI can preview incoming fields
+          setResult((prev) => ({ ...(prev ?? {}), ...(info.partial as any) } as AnalysisResult));
+        }
 
         if (cancelled) return;
 
@@ -57,8 +70,10 @@ export function AnalysisPage() {
           return;
         }
 
-        // still running – schedule next poll
-        pollTimer = window.setTimeout(poll, 3000);
+        // still running – schedule next poll with exponential backoff
+        attempts += 1;
+        const next = Math.min(5000, Math.round(1000 * Math.pow(1.5, attempts)));
+        pollTimer = window.setTimeout(poll, next);
       } catch (e) {
         console.error(e);
         if (!cancelled) {
@@ -91,10 +106,13 @@ export function AnalysisPage() {
   if (loadState === 'loading' || loadState === 'polling') {
     return (
       <main className="mx-auto flex max-w-6xl flex-1 flex-col gap-6 px-4 py-8 text-slate-100">
-        <div className="text-sm text-slate-400">
-          Analyzing track… this can take up to a minute depending on length.
+        <div className="text-sm text-slate-400">Analyzing track… this can take a minute depending on length.</div>
+        {/* Use the new loading component which shows progress and partials */}
+        <div className="mt-4">
+          <React.Suspense fallback={<div>Preparing analysis…</div>}>
+            <AnalysisLoading status={statusInfo ?? undefined} partial={result ?? undefined} />
+          </React.Suspense>
         </div>
-        <div className="h-32 rounded-3xl border border-slate-800 bg-slate-900/70" />
       </main>
     );
   }
@@ -111,13 +129,6 @@ export function AnalysisPage() {
       </main>
     );
   }
-
-  const masterPath =
-    result.stems.vocals ||
-    result.stems.other ||
-    null;
-
-  const isStemSource = waveformSource.kind === 'stem';
 
   return <DawAnalysisView result={result} />;
   // return (
