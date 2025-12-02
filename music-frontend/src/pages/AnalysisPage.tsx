@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getResult, getStatus } from '../lib/api';
 import { AnalysisResult, StemName } from '../types/analysis';
-import { MasterPlayer } from '../components/analysis/MasterPlater';
-import { StemGrid } from '../components/analysis/StemGrid';
-import { MetadataHeader } from '../components/analysis/MetaHeader';
+// import { MasterPlayer } from '../components/analysis/MasterPlater';
+// import { StemGrid } from '../components/analysis/StemGrid';
+// import { MetadataHeader } from '../components/analysis/MetaHeader';
 import { DawAnalysisView } from '../components/daw/DawAnalysisView';
 type LoadState = 'idle' | 'loading' | 'polling' | 'ready' | 'error';
 
