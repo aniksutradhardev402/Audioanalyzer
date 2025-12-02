@@ -6,7 +6,7 @@ import { AnalysisResult, StemName } from '../types/analysis';
 import { MasterPlayer } from '../components/analysis/MasterPlater';
 import { StemGrid } from '../components/analysis/StemGrid';
 import { MetadataHeader } from '../components/analysis/MetaHeader';
-
+import { DawAnalysisView } from '../components/daw/DawAnalysisView';
 type LoadState = 'idle' | 'loading' | 'polling' | 'ready' | 'error';
 
 type WaveformSource =
@@ -119,40 +119,41 @@ export function AnalysisPage() {
 
   const isStemSource = waveformSource.kind === 'stem';
 
-  return (
-    <main className="mx-auto flex max-w-6xl flex-1 flex-col gap-6 px-4 py-8 text-slate-100">
-      {/* top metadata cards */}
-      <MetadataHeader metadata={result.metadata} />
+  return <DawAnalysisView result={result} />;
+  // return (
+  //   <main className="mx-auto flex max-w-6xl flex-1 flex-col gap-6 px-4 py-8 text-slate-100">
+  //     {/* top metadata cards */}
+  //     <MetadataHeader metadata={result.metadata} />
 
-      {/* master / stem waveform + chords */}
-      <MasterPlayer
-        audioPath={
-          waveformSource.kind === 'master'
-            ? waveformSource.path ?? masterPath
-            : waveformSource.path ?? masterPath
-        }
-        chords={result.chords}
-        isStemSource={isStemSource}
-        stemLabel={isStemSource ? waveformSource.name : undefined}
-        notes={result.notes}                   // 👈 NEW
-        onShowMaster={
-          isStemSource
-            ? () =>
-                setWaveformSource({
-                  kind: 'master',
-                  path: masterPath,
-                })
-            : undefined
-        }
-      />
+  //     {/* master / stem waveform + chords */}
+  //     <MasterPlayer
+  //       audioPath={
+  //         waveformSource.kind === 'master'
+  //           ? waveformSource.path ?? masterPath
+  //           : waveformSource.path ?? masterPath
+  //       }
+  //       chords={result.chords}
+  //       isStemSource={isStemSource}
+  //       stemLabel={isStemSource ? waveformSource.name : undefined}
+  //       notes={result.notes}                   // 👈 NEW
+  //       onShowMaster={
+  //         isStemSource
+  //           ? () =>
+  //               setWaveformSource({
+  //                 kind: 'master',
+  //                 path: masterPath,
+  //               })
+  //           : undefined
+  //       }
+  //     />
 
-      {/* stems grid */}
-      <StemGrid
-        stems={result.stems}
-        onStemSelect={(name, path) =>
-          setWaveformSource({ kind: 'stem', name, path })
-        }
-      />
-    </main>
-  );
+  //     {/* stems grid */}
+  //     <StemGrid
+  //       stems={result.stems}
+  //       onStemSelect={(name, path) =>
+  //         setWaveformSource({ kind: 'stem', name, path })
+  //       }
+  //     />
+  //   </main>
+  // );
 }
