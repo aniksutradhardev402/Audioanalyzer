@@ -10,6 +10,7 @@ interface Props {
 const ACCEPTED_TYPES = ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/ogg'];
 
 export function UploadCard({ onFileSelected, isBusy, statusMessage }: Props) {
+  
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -49,18 +50,17 @@ export function UploadCard({ onFileSelected, isBusy, statusMessage }: Props) {
   };
 
   return (
-    <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-8 shadow-2xl shadow-slate-950/80">
+    <div className="rounded-3xl border-2 app-accent bg-app-elevated p-8 transition-all duration-300  cursor-pointer hover:shadow-2xl hover:border-gray-400">
+      {/* The className now conditionally adds a background and border color when a file is being dragged over */}
       <div
-        className={`flex flex-col items-center justify-center rounded-3xl border-2 border-dashed px-8 py-16 transition ${
-          isDragging
-            ? 'border-cyan-400 bg-cyan-500/10'
-            : 'border-slate-700 bg-slate-900/60'
+        className={`flex flex-col  items-center justify-center rounded-3xl  border-2 border-dashed px-4 py-8 transition-all duration-300 transform  hover:hover:scale-102 bg-app-accent-soft ${
+          isDragging ? ' border-double bg-app-accent-soft scale-102' : 'border-current'
         }`}
         onDrop={onDrop}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
       >
-        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-800/80 text-cyan-400">
+        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-app-accent-soft text-app-accent">
           {/* Upload icon */}
           <svg
             className="h-7 w-7"
@@ -74,26 +74,27 @@ export function UploadCard({ onFileSelected, isBusy, statusMessage }: Props) {
             <path d="M5 21h14" />
           </svg>
         </div>
-        <h1 className="text-xl font-semibold text-slate-50">
+        <h1 className="text-xl font-semibold text-app">
           Upload Your Music
         </h1>
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="mt-2 text-sm app-text-muted">
           Drag &amp; drop your audio file here
         </p>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs app-text-muted">
           Supported formats: MP3, WAV, FLAC, OGG
         </p>
 
-        <div className="mt-6 flex items-center gap-3 text-xs text-slate-500">
-          <span className="h-px w-12 bg-slate-700" />
+        <div className="mt-6 flex items-center gap-3 text-xs app-text-muted">
+          <span className="h-px w-12 bg-app-accent" />
           OR
-          <span className="h-px w-12 bg-slate-700" />
+          <span className="h-px w-12 bg-app-accent" />
         </div>
 
         <div className="mt-5">
           <Button
             type="button"
             disabled={isBusy}
+            className="transition-all duration-300 hover:shadow-xl bg-app-accent"
             onClick={() => fileInputRef.current?.click()}
           >
             {isBusy ? 'Uploading…' : 'Choose File'}
@@ -107,9 +108,7 @@ export function UploadCard({ onFileSelected, isBusy, statusMessage }: Props) {
           />
         </div>
 
-        {statusMessage && (
-          <p className="mt-4 text-xs text-cyan-300">{statusMessage}</p>
-        )}
+        {statusMessage && <p className="mt-4 text-xs text-app-accent">{statusMessage}</p>}
 
         {error && (
           <p className="mt-3 text-xs text-red-400" role="alert">

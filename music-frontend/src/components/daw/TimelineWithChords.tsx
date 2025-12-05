@@ -29,30 +29,25 @@ export const TimelineWithChords: React.FC<TimelineProps> = ({
   };
 
   return (
-    <div className="relative border-b border-slate-900 bg-[#05080f] px-5 py-2 text-[10px] text-slate-400">
+    <div className="relative border-b border-app bg-app-elevated px-5 py-2 font-bold text-md text-app-accent">
       {/* clickable measure ruler */}
       <div
         className="relative flex items-center cursor-pointer"
         onClick={handleSeek}
       >
-        <div className="flex flex-1 justify-between text-[10px] text-slate-500">
+        <div className="flex flex-1 justify-between text-md text-app-accent-soft">
           {Array.from({ length: measures }).map((_, i) => (
             <div key={i} className="flex flex-1 flex-col items-center">
-              <span className="h-4 w-px bg-slate-700/60" />
+              <span className="h-4 w-[4px] bg-app-accent" />
               <span className="mt-1">{i + 1}</span>
             </div>
           ))}
         </div>
 
-        {/* small current chord badge on the right */}
-        <div className="ml-4 flex items-center gap-2">
-          
-          
-        </div>
-
+        
         {/* playhead */}
         <div
-          className="pointer-events-none absolute inset-y-0 w-[2px] bg-[#00d6d6] shadow-[0_0_18px_rgba(0,214,214,0.7)]"
+          className="pointer-events-none absolute inset-y-0 w-[2px] bg-app-accent shadow-[0_0_18px_rgba(0,214,214,0.7)]"
           style={{ left: `${playheadPct}%` }}
         />
       </div>

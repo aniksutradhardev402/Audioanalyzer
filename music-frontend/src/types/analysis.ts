@@ -54,9 +54,23 @@ export interface UploadResponse {
 
 export type TaskState = 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILURE';
 
+export interface PartialResults {
+  metadata?: TrackMetadata;
+  stems?: StemsMap;
+  chords?: ChordEvent[];
+  notes?: NotesByStem;
+}
+
+export interface StatusInfo {
+  step?: string;
+  progress?: number;
+  partial?: PartialResults;
+}
+
 export interface StatusResponse {
   task_id: string;
   state: TaskState;
   status: string;
+  info?: StatusInfo;
   error?: string;
 }

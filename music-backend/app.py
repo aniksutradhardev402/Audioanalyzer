@@ -38,6 +38,17 @@ def get_status(task_id):
         response["status"] = "Pending..."
     elif task_result.state != 'FAILURE':
         response["status"] = str(task_result.info)
+        # Extract structured info from task meta
+        if isinstance(task_result.info, dict):
+            info = {}
+            if 'step' in task_result.info:
+                info['step'] = task_result.info['step']
+            if 'progress' in task_result.info:
+                info['progress'] = task_result.info['progress']
+            if 'partial' in task_result.info:
+                info['partial'] = task_result.info['partial']
+            if info:
+                response['info'] = info
     else:
         response["status"] = "Something went wrong"
         response["error"] = str(task_result.info)
