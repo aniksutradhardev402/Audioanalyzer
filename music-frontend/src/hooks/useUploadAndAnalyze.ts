@@ -1,7 +1,7 @@
-// src/hooks/useAudioAnalyzer.tsimport { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnalysisResult, TaskState } from '../types/analysis';
 import { uploadAudio, getStatus, getResult } from '../lib/api';
-import { useEffect, useRef, useState,useCallback } from 'react';
+
 
 export interface AudioAnalysisData {
   timeDomain: Float32Array | null;
@@ -24,8 +24,8 @@ interface UploadState {
   result?: AnalysisResult;
 }
 
-const POLL_INTERVAL_MS = 3000;
-const POLL_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
+const POLL_INTERVAL_MS = 25000000;
+const POLL_TIMEOUT_MS = 20 * 60 * 500;
 
 export function useUploadAndAnalyze() {
   const [state, setState] = useState<UploadState>({

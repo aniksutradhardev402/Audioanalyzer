@@ -1,17 +1,20 @@
 // src/pages/AnalysisPage.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { getResult, getStatus } from '../lib/api';
-import { AnalysisResult, StemName } from '../types/analysis';
-import { MasterPlayer } from '../components/analysis/MasterPlater';
-import { StemGrid } from '../components/analysis/StemGrid';
-import { MetadataHeader } from '../components/analysis/MetaHeader';
+import { AnalysisResult, StemName, PartialResults } from '../types/analysis';
 import { DawAnalysisView } from '../components/daw/DawAnalysisView';
+import { AnalysisLoading } from '../components/analysis/AnalysisLoading';
+
 type LoadState = 'idle' | 'loading' | 'polling' | 'ready' | 'error';
 
 type WaveformSource =
   | { kind: 'master'; path?: string | null }
   | { kind: 'stem'; name: StemName; path?: string | null };
+
+const INITIAL_POLL_INTERVAL_MS = 1000; // 1 second
+const MAX_POLL_INTERVAL_MS = 30000; // 30 seconds
+const POLL_BACKOFF_MULTIPLIER = 1.5;
 
 export function AnalysisPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -23,6 +26,15 @@ export function AnalysisPage() {
     null,
   );
 
+  // Polling state
+  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('Starting analysis…');
+  const [partial, setPartial] = useState<PartialResults>({});
+
+  const pollTimer = useRef<number | undefined>(undefined);
+  const pollInterval = useRef(INITIAL_POLL_INTERVAL_MS);
+  const cancelledRef = useRef(false);
+
   // Poll backend for status/result
   useEffect(() => {
     if (!taskId) {
@@ -31,21 +43,21 @@ export function AnalysisPage() {
       return;
     }
 
-    let cancelled = false;
-    let pollTimer: number | undefined;
+    cancelledRef.current = false;
 
     const poll = async () => {
       try {
         setLoadState((prev) => (prev === 'loading' ? 'loading' : 'polling'));
         const status = await getStatus(taskId);
 
-        if (cancelled) return;
+        if (cancelledRef.current) return;
 
         if (status.state === 'SUCCESS') {
           const res = await getResult(taskId);
-          if (cancelled) return;
+          if (cancelledRef.current) return;
 
           setResult(res);
+          setProgress(100);
           setLoadState('ready');
           setError(null);
           return;
@@ -57,13 +69,37 @@ export function AnalysisPage() {
           return;
         }
 
-        // still running – schedule next poll
-        pollTimer = window.setTimeout(poll, 3000);
+        // Update progress and partial results from structured status
+        if (status.info) {
+          if (status.info.progress !== undefined) {
+            setProgress(status.info.progress);
+          }
+          if (status.info.step) {
+            setCurrentStep(status.info.step);
+          }
+          if (status.info.partial) {
+            // Merge partial results (don't overwrite)
+            setPartial((prev) => ({
+              ...prev,
+              ...(status.info?.partial || {}),
+            }));
+          }
+        }
+
+        // Reset interval to fast track when progressing
+        pollInterval.current = INITIAL_POLL_INTERVAL_MS;
+
+        // Schedule next poll
+        pollTimer.current = window.setTimeout(poll, pollInterval.current);
       } catch (e) {
         console.error(e);
-        if (!cancelled) {
-          setError('Failed to reach analysis server');
-          setLoadState('error');
+        if (!cancelledRef.current) {
+          // Exponential backoff on error
+          pollInterval.current = Math.min(
+            pollInterval.current * POLL_BACKOFF_MULTIPLIER,
+            MAX_POLL_INTERVAL_MS,
+          );
+          pollTimer.current = window.setTimeout(poll, pollInterval.current);
         }
       }
     };
@@ -71,8 +107,8 @@ export function AnalysisPage() {
     poll();
 
     return () => {
-      cancelled = true;
-      if (pollTimer) window.clearTimeout(pollTimer);
+      cancelledRef.current = true;
+      if (pollTimer.current) window.clearTimeout(pollTimer.current);
     };
   }, [taskId]);
 
@@ -90,12 +126,7 @@ export function AnalysisPage() {
 
   if (loadState === 'loading' || loadState === 'polling') {
     return (
-      <main className="mx-auto flex max-w-6xl flex-1 flex-col gap-6 px-4 py-8 text-slate-100">
-        <div className="text-sm text-slate-400">
-          Analyzing track… this can take up to a minute depending on length.
-        </div>
-        <div className="h-32 rounded-3xl border border-slate-800 bg-slate-900/70" />
-      </main>
+      <AnalysisLoading progress={progress} step={currentStep} partial={partial} />
     );
   }
 
@@ -112,48 +143,5 @@ export function AnalysisPage() {
     );
   }
 
-  const masterPath =
-    result.stems.vocals ||
-    result.stems.other ||
-    null;
-
-  const isStemSource = waveformSource.kind === 'stem';
-
   return <DawAnalysisView result={result} />;
-  // return (
-  //   <main className="mx-auto flex max-w-6xl flex-1 flex-col gap-6 px-4 py-8 text-slate-100">
-  //     {/* top metadata cards */}
-  //     <MetadataHeader metadata={result.metadata} />
-
-  //     {/* master / stem waveform + chords */}
-  //     <MasterPlayer
-  //       audioPath={
-  //         waveformSource.kind === 'master'
-  //           ? waveformSource.path ?? masterPath
-  //           : waveformSource.path ?? masterPath
-  //       }
-  //       chords={result.chords}
-  //       isStemSource={isStemSource}
-  //       stemLabel={isStemSource ? waveformSource.name : undefined}
-  //       notes={result.notes}                   // 👈 NEW
-  //       onShowMaster={
-  //         isStemSource
-  //           ? () =>
-  //               setWaveformSource({
-  //                 kind: 'master',
-  //                 path: masterPath,
-  //               })
-  //           : undefined
-  //       }
-  //     />
-
-  //     {/* stems grid */}
-  //     <StemGrid
-  //       stems={result.stems}
-  //       onStemSelect={(name, path) =>
-  //         setWaveformSource({ kind: 'stem', name, path })
-  //       }
-  //     />
-  //   </main>
-  // );
 }

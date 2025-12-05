@@ -12,7 +12,7 @@ export function BigChordPanel({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // ✅ unique chord list
+  //  unique chord list
   const uniqueChords = useMemo(() => {
     const seen = new Set<string>();
     return chords.filter((c) => {
@@ -22,29 +22,29 @@ export function BigChordPanel({
     });
   }, [chords]);
 
-  // ✅ currently playing chord
+  // currently playing chord
   const activeChord =
     chords.find(
       (c) => currentTime >= c.start_time && currentTime < c.end_time,
     )?.chord_name ?? '--';
 
-  // ✅ wheel-scroll
+  // wheel-scroll
   const onWheel = (e: React.WheelEvent) => {
     if (!containerRef.current) return;
     containerRef.current.scrollLeft += e.deltaY;
   };
 
   return (
-    <div className="border-t border-slate-900 bg-[#04060c] px-6 py-5">
+    <div className="mt-5  border-app bg-app-elevated rounded-2xl px-6 py-5">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs uppercase tracking-wide text-slate-400">
+        <span className="text-xs uppercase tracking-wide text-cyan-200">
           Chords
         </span>
 
         {/* BIG active chord */}
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-slate-500">Now</span>
-          <div className="h-14 w-24 flex items-center justify-center rounded-2xl bg-[#020617] text-2xl font-bold text-[#00d6d6] shadow-[0_0_35px_rgba(0,214,214,0.8)]">
+          <div className="  h-14 w-24 flex items-center justify-center rounded-2xl bg-app text-2xl font-bold text-cyan-600 shadow-[0_0_35px_rgba(0,214,214,0.8)]">
             {activeChord}
           </div>
         </div>
@@ -62,8 +62,8 @@ export function BigChordPanel({
             onClick={() => onSeek(c.start_time)}
             className={`min-w-[70px] rounded-xl px-4 py-3 text-lg font-semibold transition ${
               c.chord_name === activeChord
-                ? 'bg-[#00d6d6] text-[#020617]'
-                : 'bg-[#0b1020] text-slate-200 hover:bg-[#141b35]'
+                ? 'bg-[#1fcab3] text-[#020617]'
+                : 'bg-app-accent-soft text-slate-200 hover:bg-green-900 cursor-pointer'
             }`}
           >
             {c.chord_name}
