@@ -53,14 +53,13 @@ export function BigChordPanel({
       {/* chord list */}
       <div
         ref={containerRef}
-        onWheel={onWheel}
-        className="flex gap-4 overflow-x-hidden"
+        className="grid grid-cols-10 gap-2 h-50 overflow-y-auto no-scrollbar"
       >
         {uniqueChords.map((c) => (
           <button
             key={c.chord_name}
             onClick={() => onSeek(c.start_time)}
-            className={`min-w-[70px] rounded-xl px-4 py-3 text-lg font-semibold transition ${
+            className={` h-10 w-20 rounded-xl px-3 py-2 text-base font-semibold transition ${
               c.chord_name === activeChord
                 ? 'bg-[#1fcab3] text-[#020617]'
                 : 'bg-app-accent-soft text-slate-200 hover:bg-green-900 cursor-pointer'

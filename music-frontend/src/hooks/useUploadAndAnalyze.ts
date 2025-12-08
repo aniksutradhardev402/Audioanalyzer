@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AnalysisResult, TaskState } from '../types/analysis';
+import { AnalysisResult, TaskState, PartialResults } from '../types/analysis';
 import { uploadAudio, getStatus, getResult } from '../lib/api';
 
 
 export interface AudioAnalysisData {
   timeDomain: Float32Array | null;
   frequency: Uint8Array | null;
+  sampleRate: number;
   currentTime: number;
   duration: number;
   isPlaying: boolean;
@@ -18,13 +19,15 @@ export interface AudioAnalysisData {
 interface UploadState {
   isUploading: boolean;
   isProcessing: boolean;
+  progress?: number;
   taskId?: string;
   statusMessage?: string;
   error?: string;
+  partial?: PartialResults;
   result?: AnalysisResult;
 }
 
-const POLL_INTERVAL_MS = 25000000;
+const POLL_INTERVAL_MS = 20000;
 const POLL_TIMEOUT_MS = 20 * 60 * 500;
 
 export function useUploadAndAnalyze() {
@@ -90,6 +93,11 @@ export function useUploadAndAnalyze() {
         setState((prev) => ({
           ...prev,
           isProcessing: true,
+          progress: status.info?.progress,
+          partial: {
+            ...prev.partial,
+            ...status.info?.partial,
+          },
           statusMessage: status.status,
         }));
       } catch (err) {
@@ -112,11 +120,13 @@ export function useUploadAndAnalyze() {
   const upload = useCallback(
     async (file: File) => {
       setState({
+        progress: 0,
         isUploading: true,
         isProcessing: false,
         taskId: undefined,
         statusMessage: undefined,
         error: undefined,
+        partial: undefined,
         result: undefined,
       });
 
@@ -146,6 +156,22 @@ export function useUploadAndAnalyze() {
     [startPolling],
   );
 
-  return { state, upload };
-}
+  const pollTask = useCallback(
+    (taskId: string) => {
+      setState({
+        progress: 0,
+        isUploading: false,
+        isProcessing: true,
+        taskId: taskId,
+        statusMessage: 'Checking analysis status…',
+        error: undefined,
+        partial: undefined,
+        result: undefined,
+      });
+      startPolling(taskId);
+    },
+    [startPolling],
+  );
 
+  return { state, upload, pollTask };
+}
