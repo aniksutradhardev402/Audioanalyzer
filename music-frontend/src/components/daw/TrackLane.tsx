@@ -29,7 +29,7 @@ export const TrackLane: React.FC<TrackLaneProps> = ({
 }) => {
   return (
     <div
-      className={`flex h-30 mt-4 cursor-pointer  flex-col border-t border-b border-app px-2 py-2 text-sm text-app ${
+      className={`flex cursor-pointer flex-col border-b border-app px-2 py-2 text-sm text-app ${
         isActive ? 'bg-app-accent-soft' : 'bg-app-elevated'
       } hover:bg-[#1e2022]`}
       onClick={onClick}
@@ -62,30 +62,6 @@ export const TrackLane: React.FC<TrackLaneProps> = ({
         </div>
       </div>
 
-      {/* TRACK GRID + EXISTING WAVEFORM */}
-      <div
-        className="relative mt-1 flex-1"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* grid background (like DAW lanes) */}
-       
-
-        {/* scrollable content with waveform */}
-        <div className="relative flex h-full flex-col justify-between overflow-hidden rounded-md">
-          <div className="flex-1 overflow-x-auto">
-            <WaveStrip
-              samples={waveformSamples}
-              duration={duration}
-              currentTime={currentTime}
-              onSeek={onSeek}
-              height={36}
-              active={isActive}
-            />
-          </div>
-
-      
-        </div>
-      </div>
     </div>
   );
 };
