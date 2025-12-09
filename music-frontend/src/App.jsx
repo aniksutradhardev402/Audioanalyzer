@@ -66,6 +66,7 @@
 //           const response = await fetch(`${API_URL}/status/${taskId}`);
 //           const data = await response.json();
 
+
 //           // Update status message based on backend info
 //           // The 'status' field from the backend can be a string or a dictionary
 //           let currentStatus = data.status;
@@ -73,6 +74,10 @@
 //             currentStatus = currentStatus.status || 'Processing...';
 //           }
 //           setStatus(currentStatus);
+          // Only surface final state here — the main app shows detailed progress.
+          // if (data.state !== 'SUCCESS' && data.state !== 'FAILURE') {
+          //   setStatus('Processing...');
+          // }
 
 //           if (data.state === 'SUCCESS') {
 //             clearInterval(intervalRef.current); // Stop polling

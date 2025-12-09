@@ -38,6 +38,9 @@ def get_status(task_id):
         "task_id": task_id,
         "state": task_result.state,
     }
+
+    # task_result.info may be a dict when update_state was called in the task
+    info = task_result.info
     if task_result.state == 'PENDING':
         response["status"] = "Pending..."
     elif task_result.state == 'SUCCESS':

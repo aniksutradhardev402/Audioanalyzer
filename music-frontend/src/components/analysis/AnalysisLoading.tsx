@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PartialResults } from '../../types/analysis';
@@ -195,3 +196,7 @@ export function AnalysisLoading({
     </PageShell>
   );
 }
+
+
+export default AnalysisLoading;
+
