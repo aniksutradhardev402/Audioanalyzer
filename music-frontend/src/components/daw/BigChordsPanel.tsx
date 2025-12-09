@@ -40,20 +40,13 @@ export function BigChordPanel({
         <span className="text-xs uppercase tracking-wide text-cyan-200">
           Chords
         </span>
-
-        {/* BIG active chord */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-slate-500">Now</span>
-          <div className="  h-14 w-24 flex items-center justify-center rounded-2xl bg-app text-2xl font-bold text-cyan-600 shadow-[0_0_35px_rgba(0,214,214,0.8)]">
-            {activeChord}
-          </div>
-        </div>
+        {/* The "Now" chord display is now a separate floating component */}
       </div>
 
       {/* chord list */}
       <div
         ref={containerRef}
-        className="grid grid-cols-10 gap-2 h-50 overflow-y-auto no-scrollbar"
+        className="flex flex-wrap justify-center gap-2"
       >
         {uniqueChords.map((c) => (
           <button

@@ -27,7 +27,8 @@ export type StemName =
   | 'bass'
   | 'piano'
   | 'guitar'
-  | 'other';
+  | 'other'
+  | 'master';
 export interface NoteEvent {
   pitch: number;        // MIDI pitch
   start: number;        // seconds

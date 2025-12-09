@@ -58,7 +58,7 @@ export const WaveStrip: React.FC<WaveStripProps> = ({
       onClick={handleClick}
     >
       <div
-        className="relative flex h-full w-full items-center gap-[1px]"
+        className="relative flex h-full w-full items-center"
       >
         {samples.map((v, i) => {
           const barProgress = i / samples.length;
@@ -68,7 +68,7 @@ export const WaveStrip: React.FC<WaveStripProps> = ({
           return (
             <div
               key={i}
-              className="flex-1 rounded-full"
+              className="flex-1"
               style={{
                 height: `${8 + v * 90}%`,
                 background: played ? baseColor : unplayedColor,

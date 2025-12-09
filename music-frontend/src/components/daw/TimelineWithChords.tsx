@@ -29,13 +29,13 @@ export const TimelineWithChords: React.FC<TimelineProps> = ({
   };
 
   return (
-    <div className="relative border-b border-app bg-app-elevated px-5 py-2 font-bold text-md text-app-accent">
+    <div className="relative border-b border-app bg-app-elevated px-2 py-2 font-bold text-app-accent md:px-5">
       {/* clickable measure ruler */}
       <div
         className="relative flex items-center cursor-pointer"
         onClick={handleSeek}
       >
-        <div className="flex flex-1 justify-between text-md text-app-accent-soft">
+        <div className="flex flex-1 justify-between text-xs text-app-accent-soft md:text-md">
           {Array.from({ length: measures }).map((_, i) => (
             <div key={i} className="flex flex-1 flex-col items-center">
               <span className="h-4 w-[4px] bg-app-accent" />

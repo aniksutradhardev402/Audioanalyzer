@@ -5,12 +5,20 @@ import { DawAnalysisView } from '../components/daw/DawAnalysisView';
 import { AnalysisLoading } from '../components/analysis/AnalysisLoading';
 import { useUploadAndAnalyze } from '../hooks/useUploadAndAnalyze';
 
+
 export function AnalysisPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-  const { state, pollTask } = useUploadAndAnalyze();
+  // The `reset` function should come from your state management hook
+  const { state, pollTask, reset } = useUploadAndAnalyze();
   const { isProcessing, statusMessage, progress = 0, partial, result, error } = state;
-
+  
+  // This function will be passed down to the loading component.
+  // It calls the reset function from your state management hook.
+  const handleCancel = () => {
+    reset();
+  };
+  
   // Poll backend for status/result
   useEffect(() => {
     if (!taskId) {
@@ -23,11 +31,18 @@ export function AnalysisPage() {
     if (state.taskId !== taskId) {
       pollTask(taskId);
     }
-  }, [taskId, navigate, pollTask, state.taskId]);
+  }, [taskId, navigate, pollTask, state.taskId, reset]);
 
+  
   if (isProcessing || !result) {
     return (
-      <AnalysisLoading progress={progress} step={statusMessage} partial={partial} />
+      <AnalysisLoading
+        progress={progress}
+        taskId={taskId}
+        step={statusMessage}
+        partial={partial || {}}
+        onCancel={handleCancel}
+      />
     );
   }
 

@@ -48,7 +48,6 @@ export const TrackLane: React.FC<TrackLaneProps> = ({
             className="flex items-center gap-2"
             onClick={(e) => e.stopPropagation()}
           >
-          
             <input
               type="range"
               min={0}
