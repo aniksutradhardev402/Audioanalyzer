@@ -58,7 +58,7 @@ export interface StatusInfo {
   status?: string; // human readable status message
   progress?: number; // 0..100
   step?: string; // short step id e.g. 'separate_stems'
-  partial?: Partial<AnalysisResult> | Record<string, unknown>; // small partial results like metadata/stems
+  partial?: PartialResults; // small partial results like metadata/stems
   error?: string;
 }
 
@@ -72,7 +72,7 @@ export interface PartialResults {
 export interface StatusInfo {
   step?: string;
   progress?: number;
-  partial?: Partial<AnalysisResult> | Record<string, unknown>;
+  partial?: PartialResults;
 }
 
 export interface StatusResponse {
