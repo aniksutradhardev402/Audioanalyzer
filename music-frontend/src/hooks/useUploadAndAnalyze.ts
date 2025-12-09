@@ -27,14 +27,22 @@ interface UploadState {
   result?: AnalysisResult;
 }
 
+const initialState: UploadState = {
+  isUploading: false,
+  isProcessing: false,
+  progress: 0,
+  taskId: undefined,
+  statusMessage: undefined,
+  error: undefined,
+  partial: undefined,
+  result: undefined,
+};
+
 const POLL_INTERVAL_MS = 20000;
 const POLL_TIMEOUT_MS = 20 * 60 * 500;
 
 export function useUploadAndAnalyze() {
-  const [state, setState] = useState<UploadState>({
-    isUploading: false,
-    isProcessing: false,
-  });
+  const [state, setState] = useState<UploadState>(initialState);
 
   const pollTimer = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -47,6 +55,11 @@ export function useUploadAndAnalyze() {
   };
 
   useEffect(() => clearPoll, []);
+
+  const reset = useCallback(() => {
+    clearPoll();
+    setState(initialState);
+  }, []);
 
   const startPolling = useCallback((taskId: string) => {
     startTimeRef.current = Date.now();
@@ -119,16 +132,7 @@ export function useUploadAndAnalyze() {
 
   const upload = useCallback(
     async (file: File) => {
-      setState({
-        progress: 0,
-        isUploading: true,
-        isProcessing: false,
-        taskId: undefined,
-        statusMessage: undefined,
-        error: undefined,
-        partial: undefined,
-        result: undefined,
-      });
+      setState({ ...initialState, isUploading: true, statusMessage: 'Uploading file...' });
 
       try {
         const resp = await uploadAudio(file);
@@ -173,5 +177,5 @@ export function useUploadAndAnalyze() {
     [startPolling],
   );
 
-  return { state, upload, pollTask };
+  return { state, upload, pollTask, reset };
 }
