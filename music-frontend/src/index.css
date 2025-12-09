@@ -1,68 +1,46 @@
-/* Tailwind v4 layering */
+/* Tailwind v4 */
 @import "tailwindcss";
+
 html,
 body,
 #root {
   height: 100%;
 }
 
-/* Main app background – tweak this hex to your "original" */
-body {
-  margin: 0;
-  background-color: #070b17; /* deep navy / near-black */
-  color: #e5ecff;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    Roboto, Ubuntu, 'Helvetica Neue', sans-serif;
-}
-
 .no-scrollbar::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
+
 .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-}
-/* Design tokens using @theme */
-@theme {
-  /* Light mode tokens */
-  --color-bg: theme(colors.slate.50);
-  --color-bg-elevated: theme(colors.slate.100);
-  --color-bg-muted: theme(colors.slate.200);
-  --color-border: theme(colors.slate.300);
-  --color-fg: theme(colors.slate.900);
-  --color-fg-muted: theme(colors.slate.600);
-  --color-accent: theme(colors.cyan.500);
-  --color-accent-soft: color-mix(
-    in srgb,
-    theme(colors.cyan.500) 16%,
-    transparent
-  );
-
-  /* Dark mode tokens (overridden in .dark below) */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-/* Base styles */
-@base {
+/* Design tokens using CSS custom properties */
+@layer base {
+  /* Light mode (default) - white background, purple accent */
   :root {
     color-scheme: light dark;
-    background-color: var(--color-bg);
-    color: var(--color-fg);
+    --color-bg: #ffffff;
+    --color-bg-elevated: #f5f3ff;
+    --color-bg-muted: #ede9fe;
+    --color-border: #332a3d;
+    --color-fg: #1e1b4b;
+    --color-fg-muted: #6b7280;
+    --color-accent: #a855f7;
+    --color-accent-soft: rgba(168, 85, 247, 0.12);
   }
 
-  /* Dark theme overrides */
-  .dark {
-    --color-bg: theme(colors.slate.950);
-    --color-bg-elevated: theme(colors.slate.900);
-    --color-bg-muted: theme(colors.slate.800);
-    --color-border: theme(colors.slate.800);
-    --color-fg: theme(colors.slate.50);
-    --color-fg-muted: theme(colors.slate.400);
-    --color-accent: theme(colors.cyan.500);
-    --color-accent-soft: color-mix(
-      in srgb,
-      theme(colors.cyan.500) 30%,
-      transparent
-    );
+  /* Dark mode - black background, green accent */
+  :root.dark {
+    --color-bg: #0a0a0a;
+    --color-bg-elevated: #1a1a1a;
+    --color-bg-muted: #2d2d2d;
+    --color-border: #2f4431;
+    --color-fg: #e8e8e8;
+    --color-fg-muted: #a0a0a0;
+    --color-accent: #22c55e;
+    --color-accent-soft: rgba(34, 197, 94, 0.20);
   }
 
   body {
@@ -73,6 +51,7 @@ body {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
       "Inter", sans-serif;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s, color 0.2s;
   }
 
   #root {
@@ -80,46 +59,56 @@ body {
   }
 }
 
-/* Component-level shortcuts */
-@components {
+/* Component utilities */
+ @layer components{
+
+  
   .app-surface {
-    @apply rounded-3xl border shadow-2xl;
-    background-color: color-mix(
-      in srgb,
-      var(--color-bg-elevated) 90%,
-      transparent
-    );
+    @apply rounded-[1.875rem] shadow-2xl;
     border-color: var(--color-border);
+    background-color: var(--color-bg-elevated);
   }
 
   .app-card {
-    @apply rounded-2xl border shadow-md;
-    background-color: color-mix(
-      in srgb,
-      var(--color-bg-elevated) 96%,
-      transparent
-    );
-    border-color: var(--color-border);
+    @apply rounded-2xl shadow-md;
+     border-color: var(--color-border);
+    background-color: var(--color-bg-elevated);
   }
 
   .app-text-muted {
-    color: var(--color-fg-muted);
+     color:var(--color-fg-muted);
   }
 
   .app-accent {
     color: var(--color-accent);
   }
 
-  .app-accent-bg {
-    background-color: var(--color-accent-soft);
+  .app-accent-soft{
+    color: var(--color-accent-soft)
+  }
+
+  .app-muted {
+    color: var(--color-fg-muted);
+  
   }
 }
 
-/* Utility additions (on top of Tailwind utilities) */
-@utilities {
+/* Utility shortcuts */
+@layer utilities {
   .bg-app {
     background-color: var(--color-bg);
   }
+
+   .bg-app-accent {
+    background-color: var(--color-accent);
+  }
+  .bg-app-accent-soft {
+    background-color: var(--color-accent-soft);
+  }
+  .bg-app-muted {
+    background-color: var(--color-bg-muted);
+  
+}
 
   .bg-app-elevated {
     background-color: var(--color-bg-elevated);
@@ -137,8 +126,14 @@ body {
     color: var(--color-fg-muted);
   }
 
+  .text-app-accent {
+    color: var(--color-accent);
+  }
+
   .ring-app-accent {
     --tw-ring-color: var(--color-accent);
   }
+  .text-on-accent {
+    color: #ffffff;
+  }
 }
-
