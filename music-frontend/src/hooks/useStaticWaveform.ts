@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
  */
 export function useStaticWaveform(
   audioUrl: string | null,
-  barCount: number = 500,
+  barCount: number = 400,
 ) {
   const [samples, setSamples] = useState<number[] | null>(null);
 

@@ -13,12 +13,12 @@ const StatCard = ({
   value: string;
   helper?: string;
 }) => (
-  <div className="flex flex-col rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-xs shadow-md shadow-slate-950/70">
-    <span className="text-[11px] uppercase tracking-wide text-slate-400">
+  <div className="flex flex-col rounded-2xl border border-app bg-app-elevated/60 px-4 py-3 text-xs shadow-md">
+    <span className="text-[11px] uppercase tracking-wide app-text-muted">
       {label}
     </span>
-    <span className="mt-1 text-sm font-semibold text-slate-50">{value}</span>
-    {helper && <span className="mt-1 text-[11px] text-slate-500">{helper}</span>}
+    <span className="mt-1 text-sm font-semibold text-app">{value}</span>
+    {helper && <span className="mt-1 text-[11px] app-text-muted">{helper}</span>}
   </div>
 );
 

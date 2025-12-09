@@ -27,7 +27,8 @@ export type StemName =
   | 'bass'
   | 'piano'
   | 'guitar'
-  | 'other';
+  | 'other'
+  | 'master';
 export interface NoteEvent {
   pitch: number;        // MIDI pitch
   start: number;        // seconds
@@ -57,12 +58,27 @@ export interface StatusInfo {
   status?: string; // human readable status message
   progress?: number; // 0..100
   step?: string; // short step id e.g. 'separate_stems'
-  partial?: Partial<AnalysisResult> | Record<string, unknown>; // small partial results like metadata/stems
+  partial?: PartialResults; // small partial results like metadata/stems
   error?: string;
+}
+
+export interface PartialResults {
+  metadata?: TrackMetadata;
+  stems?: StemsMap;
+  chords?: ChordEvent[];
+  notes?: NotesByStem;
+}
+
+export interface StatusInfo {
+  step?: string;
+  progress?: number;
+  partial?: PartialResults;
 }
 
 export interface StatusResponse {
   task_id: string;
   state: TaskState;
+  status: string;
   info?: StatusInfo;
+  error?: string;
 }

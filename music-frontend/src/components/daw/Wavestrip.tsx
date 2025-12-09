@@ -20,14 +20,14 @@ export const WaveStrip: React.FC<WaveStripProps> = ({
   if (!samples || !samples.length || !duration) {
     return (
       <div
-        className="w-full rounded-md bg-[#0b101a]"
+        className="w-full  bg.app-accent-soft"
         style={{ height }}
       >
         <div className="flex h-full items-center gap-[1px] px-2">
           {Array.from({ length: 80 }).map((_, i) => (
             <div
               key={i}
-              className="w-[2px] rounded-full bg-[#1f2937]"
+              className="w-[2px] rounded-full bg-app-elevated"
               style={{
                 height: `${30 + 40 * Math.abs(Math.sin(i * 0.3))}%`,
               }}
@@ -38,13 +38,8 @@ export const WaveStrip: React.FC<WaveStripProps> = ({
     );
   }
 
-  const totalBars = samples.length;
-  const barWidth = 2;
-  const gap = 1;
-  const totalWidth = totalBars * (barWidth + gap);
-
   const progress = Math.min(1, Math.max(0, currentTime / duration));
-  const playheadLeft = progress * totalWidth;
+  const playheadLeftPct = progress * 100;
 
   const handleClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
     if (!onSeek || !duration) return;
@@ -56,27 +51,25 @@ export const WaveStrip: React.FC<WaveStripProps> = ({
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-md ${
-        active ? 'bg-[#05080f]' : 'bg-[#05070d]'
+      className={`relative w-full overflow-hidden ${
+        active ? 'bg-app' : 'bg-app'
       }`}
       style={{ height }}
       onClick={handleClick}
     >
       <div
-        className="relative flex h-full items-center gap-[1px] px-2"
-        style={{ width: `${totalWidth + 4}px` }}
+        className="relative flex h-full w-full items-center"
       >
         {samples.map((v, i) => {
-          const barPos = (i * (barWidth + gap) + barWidth / 2) / totalWidth;
-          const played = barPos <= progress;
-          const baseColor = active ? '#00d6d6' : '#4b5563';
-          const unplayedColor = active ? '#1f2933' : '#111827';
+          const barProgress = i / samples.length;
+          const played = barProgress < progress;
+          const baseColor = active ? 'var(--color-accent)' : 'var(--color-accent)';
+          const unplayedColor = active ? 'var(--color-accent-soft)' : 'var(--color-accent-soft)';
           return (
             <div
               key={i}
-              className="rounded-full"
+              className="flex-1"
               style={{
-                width: `${barWidth}px`,
                 height: `${8 + v * 90}%`,
                 background: played ? baseColor : unplayedColor,
               }}
@@ -86,8 +79,8 @@ export const WaveStrip: React.FC<WaveStripProps> = ({
 
         {/* playhead */}
         <div
-          className="pointer-events-none absolute inset-y-1 w-[2px] bg-[#00d6d6] shadow-[0_0_12px_rgba(0,214,214,0.8)]"
-          style={{ left: `${playheadLeft}px` }}
+          className="pointer-events-none absolute inset-y-1 w-[2px] bg-red-500 shadow-[0_0_12px_rgba(0,214,150,0.8)]"
+          style={{ left: `${playheadLeftPct}%` }}
         />
       </div>
     </div>

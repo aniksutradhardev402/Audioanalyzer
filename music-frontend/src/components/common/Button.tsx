@@ -13,9 +13,9 @@ export function Button({ variant = 'primary', className, ...props }: Props) {
 
   const variants: Record<typeof variant, string> = {
     primary:
-      'bg-cyan-500 hover:bg-cyan-400 text-slate-900 px-4 py-2 shadow-lg shadow-cyan-500/30',
+      'app-accent-bg hover:brightness-95 text-on-accent px-4 py-2 shadow-lg',
     ghost:
-      'border border-slate-700 bg-slate-900/40 hover:bg-slate-800/60 text-slate-50 px-3 py-2',
+      'border border-app bg-app-elevated/40 hover:bg-app-elevated/60 text-app px-3 py-2',
   };
 
   return <button className={clsx(base, variants[variant], className)} {...props} />;
