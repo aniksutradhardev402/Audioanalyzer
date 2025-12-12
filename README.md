@@ -7,7 +7,7 @@
 ## Overview
 
 Audioanalyzer is a full-stack web application built with:
-- **Backend**: Python (FastAPI) - audio processing, ML models, REST APIs
+- **Backend**: Python (Flask) - audio processing, ML models, REST APIs
 - **Frontend**: React + Vite + Tailwind CSS - interactive UI for music uploads and analysis results
 
 ---
@@ -33,6 +33,19 @@ Audioanalyzer/
 ```
 
 ---
+---
+
++## System Architecture
++
++The application follows a decoupled client-server architecture:
++
++1.  **Frontend**: Built with React, Vite, and Tailwind CSS. It handles user interactions, file uploads, and visualization of analysis results.
++2.  **Backend**: A Flask (Python) API that processes audio files. It uses libraries like Librosa and Essentia for DSP (Digital Signal Processing) and ML tasks.
++3.  **Async Processing**: Heavy analysis tasks are offloaded to Celery workers to ensure API responsiveness.
++4.  **Containerization**: Services are containerized using Docker for consistent deployment.
++
++---
++
 
 ## Quick Start
 
@@ -40,6 +53,7 @@ Audioanalyzer/
 - Node.js 16+ (for frontend)
 - Python 3.8+ (for backend)
 - pip or conda (Python package manager)
++- Docker & Docker Compose (optional)
 
 ### Installation & Setup
 
@@ -50,10 +64,11 @@ git clone https://github.com/aniksutradhardev402/Audioanalyzer.git
 cd Audioanalyzer
 ```
 
-#### 2. Setup Backend
 
 ```bash
 cd music-backend
+```
+---
 
 # Create virtual environment
 python -m venv venv
@@ -66,42 +81,10 @@ venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
-```
-
-#### 3. Setup Frontend
-
-```bash
-cd ../music-frontend
-
-# Install Node dependencies
-npm install
-
-# Install Tailwind CSS (if not already in package.json)
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
-```
 
 ---
 
-## Development Setup
 
-### Running Both Services
-
-You need **TWO terminals** to run backend and frontend simultaneously:
-
-#### Terminal 1: Start Backend
-
-```bash
-cd music-backend
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-python app.py
-# Or if using Uvicorn/FastAPI:
-uvicorn app:app --reload --host 0.0.0.0 --port 5000
-```
-
-Backend runs on: `http://localhost:5000`
-
-#### Terminal 2: Start Frontend Dev Server
 
 ```bash
 cd music-frontend
@@ -178,7 +161,6 @@ Response: { "id": "...", "analysis": { ... } }
 ### Backend
 - **FastAPI** - Modern Python web framework
 - **Librosa** - Audio processing & feature extraction
-- **Essentia** - Advanced music analysis library
 - **PyTorch / TensorFlow** - ML models for chord detection
 - **Docker** - Containerization
 - **Python** - Primary backend language
@@ -220,23 +202,20 @@ PYTHON_ENV=development
 API_PORT=5000
 UPLOAD_FOLDER=uploads/
 RESULTS_FOLDER=results/
-MAX_FILE_SIZE=52428800
+
 ```
 
 ---
 
-## Docker Deployment (Optional)
+## Docker Deployment 
 
-You can run the backend in Docker:
+You can run it in Docker:
 
 ```bash
-cd music-backend
+cd Audioanalyzer
 
 # Build Docker image
-docker build -t audioanalyzer-backend .
-
-# Run container
-docker run -p 5000:5000 audioanalyzer-backend
+docker-compose build  
 
 # Or use docker-compose
 docker-compose up -d
@@ -262,4 +241,4 @@ For issues, questions, or suggestions, please open an [Issue](https://github.com
 
 ---
 
-**Built with heart by Anik Sutradhar**
+**Built by Anik Sutradhar**
