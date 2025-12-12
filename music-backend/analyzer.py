@@ -274,7 +274,7 @@ def analyze_lyrics(file_path, artist=None, title=None):
             print(f"--- [ERROR] Gemini file processing failed for {file_path}. ---")
             return {"lyrics_lines": [], "chords": None}
         
-        print("--- [INFO] File uploaded. Transcribing with Gemini 1.5 Flash... ---")
+        print("--- [INFO] File uploaded. Transcribing with Gemini 2.5 Flash... ---")
         model = genai.GenerativeModel('gemini-2.5-flash')
 
         prompt = (
@@ -313,17 +313,35 @@ def analyze_lyrics(file_path, artist=None, title=None):
             
         json_string = response_text[json_start:json_end]
         
-        lyrics_lines = json.loads(json_string)
+        try:
+            lyrics_lines = json.loads(json_string)
+        except json.JSONDecodeError:
+            print(f"--- [ERROR] Failed to decode JSON from Gemini response. Response: {json_string}")
+            return {"lyrics_lines": [], "chords": None}
         
-        # Basic validation of the returned structure
-        if not isinstance(lyrics_lines, list) or (lyrics_lines and not isinstance(lyrics_lines[0], dict)):
-             print(f"--- [ERROR] Gemini returned JSON but in the wrong format. Response: {json_string}")
-             return {"lyrics_lines": [], "chords": None}
+        # --- Robust Validation of the returned structure ---
+        if not isinstance(lyrics_lines, list):
+            print(f"--- [ERROR] Gemini returned JSON that is not a list. Response: {json_string}")
+            return {"lyrics_lines": [], "chords": None}
 
-        print(f"--- [INFO] Gemini transcription successful. Found {len(lyrics_lines)} lines. ---")
+        validated_lines = []
+        for line in lyrics_lines:
+            if (isinstance(line, dict) and
+                'start' in line and isinstance(line['start'], (int, float)) and
+                'end' in line and isinstance(line['end'], (int, float)) and
+                'text' in line and isinstance(line['text'], str)):
+                validated_lines.append(line)
+            else:
+                print(f"--- [WARN] Skipping malformed lyric line from Gemini: {line}")
+        
+        if not validated_lines:
+            print(f"--- [ERROR] Gemini response contained no valid lyric lines after validation.")
+            return {"lyrics_lines": [], "chords": None}
+
+        print(f"--- [INFO] Gemini transcription successful. Found {len(validated_lines)} valid lines. ---")
         
         # The caller expects chords to be None to trigger fallback chord analysis.
-        return {"lyrics_lines": lyrics_lines, "chords": None}
+        return {"lyrics_lines": validated_lines, "chords": None}
 
     except Exception as e:
         import traceback
@@ -336,23 +354,32 @@ def merge_lyrics_and_chords(lyrics_data, chords_data):
     Merges timestamped lyrics with timestamped chords.
     For each line of lyrics, it finds the chord playing at the beginning of the line.
     """
-    if not lyrics_data or not chords_data:
+    # If there are no lyrics, there's nothing to merge.
+    if not lyrics_data:
         return []
+
+    # If there are no chords, return lyrics with a default 'N' chord for consistency.
+    if not chords_data:
+        return [{**line, 'chord': 'N'} for line in lyrics_data]
 
     merged_data = []
     chord_idx = 0
 
     for line in lyrics_data:
         # Find the chord that is active at the start of the lyric line
-        current_chord = "N" # No Chord
+        current_chord = "N" # Default to No Chord
         
         # Advance chord_idx to find the relevant chord
+        # This loop is efficient because both lists are sorted by time.
         while chord_idx < len(chords_data) and chords_data[chord_idx]['end_time'] < line['start']:
             chord_idx += 1
         
-        if chord_idx < len(chords_data) and chords_data[chord_idx]['start_time'] <= line['start'] < chords_data[chord_idx]['end_time']:
+        # Check if the current lyric line's start time falls within the found chord segment.
+        if (chord_idx < len(chords_data) and 
+            chords_data[chord_idx]['start_time'] < line['start'] < chords_data[chord_idx]['end_time']):
             current_chord = chords_data[chord_idx]['chord_name']
         
+        # Append a new dictionary with the merged information.
         merged_data.append({
             "start": line['start'],
             "end": line['end'],

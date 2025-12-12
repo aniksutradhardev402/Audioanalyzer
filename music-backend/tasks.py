@@ -95,6 +95,9 @@ def analyze_audio_task(self, file_path, original_filename):
 
     update_progress('Analysis complete', 'Finalizing', 100)
 
+    # If lyrics were merged with chords, use the merged data.
+    # Otherwise, use the original lyrics data.
+    final_lyrics_data = merged_lyrics if merged_lyrics else lyrics
    
     # Compile final result
     
@@ -104,7 +107,7 @@ def analyze_audio_task(self, file_path, original_filename):
         "notes": notes_by_stem,
         "stems": stems,
         "song_id": song_id,
-        "lyrics_data": lyrics,
+        "lyrics_data": final_lyrics_data,
         "lyrics_doc": lyrics_doc_path,
     }
     # Final (success) state is implicitly returned by celery; nothing else to update here

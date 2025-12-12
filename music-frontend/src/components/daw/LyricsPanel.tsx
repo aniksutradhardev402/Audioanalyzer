@@ -1,22 +1,27 @@
-import React, { useEffect} from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface LyricLine {
   start: number;
   end: number;
   text: string;
+  chord?: string;
 }
 
 interface LyricsPanelProps {
   lyricsData: LyricLine[];
   currentTime: number;
   isLoading?: boolean;
+  isAutoScrollEnabled: boolean;
+  onToggleAutoScroll: () => void;
 }
 
 const isLineActive = (line: LyricLine, currentTime: number): boolean => {
   return currentTime >= line.start && currentTime < line.end;
 };
 
-export const LyricsPanel: React.FC<LyricsPanelProps> = ({ lyricsData, currentTime, isLoading }) => {
+export const LyricsPanel: React.FC<LyricsPanelProps> = ({ lyricsData, currentTime, isLoading, isAutoScrollEnabled, onToggleAutoScroll }) => {
+  const lineRefs = useRef<(HTMLDivElement | null)[]>([]);
+
   // An alternative to findIndex using a standard for loop.
   // This can be slightly more performant on extremely large arrays, but is more verbose.
   let activeLineIndex = -1;
@@ -28,10 +33,15 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ lyricsData, currentTim
     }
   }
   
-  // Log the activeLineIndex for debugging purposes
+  // Effect to scroll the active line into view if auto-scroll is enabled
   useEffect(() => {
-  console.log(`Current Time: ${currentTime.toFixed(2)}s, Active Line Index: ${activeLineIndex}`);
-  }, [currentTime, activeLineIndex]);
+    if (isAutoScrollEnabled && activeLineIndex !== -1 && lineRefs.current[activeLineIndex]) {
+      lineRefs.current[activeLineIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [activeLineIndex, isAutoScrollEnabled]);
 
   if (isLoading) {
     return (
@@ -53,7 +63,21 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ lyricsData, currentTim
   }
 
   return (
-    <div className="h-full overflow-y-auto o-scrollbar p-4 md:p-6 bg-app-elevated">
+    <div className="relative h-full overflow-y-auto o-scrollbar p-4 md:p-6 bg-app-elevated">
+       {lyricsData.length > 0 && (
+        <button
+          onClick={onToggleAutoScroll}
+          title={isAutoScrollEnabled ? "Disable auto-scroll" : "Enable auto-scroll"}
+          className={`sticky flex items-center gap-2 rounded-full px-3 py-2 text-xs shadow-lg backdrop-blur-sm border border-app-accent/50 transition-colors
+            ${isAutoScrollEnabled ? 'bg-app-accent text-app font-semibold' : 'bg-app-elevated text-app-muted hover:bg-app-accent/20'}
+          `}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+          <span>Follow</span>
+        </button>
+      )}
       <div className="space-y-6">
         {lyricsData.map((line, index) => {
           const isActive = index === activeLineIndex;
@@ -70,12 +94,25 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ lyricsData, currentTim
 
           // Render regular lyric lines
           return (
-            <div key={index} className={`transition-all duration-300 ${isActive ? 'text-app scale-102' : 'text-app-muted'}`}>
+            <div
+              key={index}
+              ref={(el) => { lineRefs.current[index] = el; }}
+              className={`transition-all duration-300 ${isActive ? 'text-app scale-102' : 'text-app-muted'}`}
+            >
+              {line.chord && line.chord !== 'N' && (
+                <p className="mb-1 font-bold text-cyan-400">
+                  {line.chord}
+                </p>
+              )}
               <p className="text-lg leading-relaxed">{line.text}</p>
+              
             </div>
           );
         })}
+        
       </div>
+
+     
     </div>
   );
 };
