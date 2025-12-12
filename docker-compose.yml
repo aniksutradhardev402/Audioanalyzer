@@ -1,0 +1,57 @@
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+  backend:
+    build:
+      context: ./music-backend
+      dockerfile: Dockerfile
+    container_name: audio-backend
+    env_file:
+      - ./music-backend/.env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # Add any other keys used in your .env (e.g., DEEPSEEK_API_KEY)
+    volumes:
+      - ./music-backend/uploads:/app/uploads
+      - ./results:/app/results
+    ports:
+      - "5000:5000"
+    depends_on:
+      - redis
+
+  worker:
+    build:
+      context: ./music-backend
+      dockerfile: Dockerfile
+    container_name: audio-worker
+    command: celery -A tasks.celery worker --loglevel=info --concurrency=1
+    env_file:
+      - ./music-backend/.env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - ./music-backend:/app
+      - ./music-backend/uploads:/app/uploads
+      - ./results:/app/results
+    depends_on:
+      - redis
+
+  frontend:
+    build:
+      context: ./music-frontend
+      dockerfile: Dockerfile
+    container_name: audio-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  redis-data:
