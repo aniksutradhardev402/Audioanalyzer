@@ -18,6 +18,7 @@ interface LyricLine {
   start: number;
   end: number;
   text: string;
+  chord?: string;
 }
 
 // Extend the base result type to include new properties from the backend
@@ -40,6 +41,7 @@ export const DawAnalysisView: React.FC<DawAnalysisViewProps> = ({ result }) => {
   const [lyricsData, setLyricsData] = useState<LyricLine[] | undefined>(result.lyrics_data);
   const [lyricsDoc, setLyricsDoc] = useState<string | null | undefined>(result.lyrics_doc);
   const [isLyricsLoading, setIsLyricsLoading] = useState(!result.lyrics_data && !!result.lyrics_task_id);
+  const [isLyricsAutoScroll, setIsLyricsAutoScroll] = useState(true);
 
 
   // per-track volume + master volume
@@ -329,6 +331,8 @@ export const DawAnalysisView: React.FC<DawAnalysisViewProps> = ({ result }) => {
               lyricsData={lyricsData || []}
               currentTime={mainAnalysis.currentTime}
               isLoading={isLyricsLoading}
+              isAutoScrollEnabled={isLyricsAutoScroll}
+              onToggleAutoScroll={() => setIsLyricsAutoScroll((prev) => !prev)}
             />
           </div>
 
