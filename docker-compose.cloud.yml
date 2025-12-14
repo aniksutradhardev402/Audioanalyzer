@@ -37,5 +37,4 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       -  ./music-frontend/dist:/srv
     depends_on:
-      - frontend
       - api
