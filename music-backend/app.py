@@ -10,8 +10,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
+
 CORS(app)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['RESULTS_FOLDER'] = 'results'
