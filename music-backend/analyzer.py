@@ -254,7 +254,7 @@ def analyze_lyrics(file_path, artist=None, title=None):
     Analyzes lyrics by transcribing audio directly using the Gemini API.
     Returns: A dictionary with 'lyrics_lines' and 'chords': None.
     """
-    gemini_api_key = os.environ.get("GEMINI_API_KEY")
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
     if not gemini_api_key:
         print("--- [WARN] GEMINI_API_KEY not set. Cannot perform lyric analysis. ---")
         return {"lyrics_lines": [], "chords": None}
