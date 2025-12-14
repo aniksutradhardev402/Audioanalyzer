@@ -5,7 +5,10 @@ soniclab.centralindia.cloudapp.azure.com {
     }
 
     handle {
+        root * /usr/share/caddy
+        try_files {path} /index.html
         reverse_proxy frontend:80
+        
     }
 
     header {
