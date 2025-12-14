@@ -27,10 +27,6 @@ services:
     depends_on:
       - redis
 
-  frontend:
-    build: ./music-frontend
-    restart: always
-
   caddy:
     image: caddy:2
     restart: always
@@ -39,6 +35,7 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
+      -  ./music-frontend/dist:/srv
     depends_on:
       - frontend
       - api
