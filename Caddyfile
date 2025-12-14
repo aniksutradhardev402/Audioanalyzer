@@ -1,14 +1,12 @@
 soniclab.centralindia.cloudapp.azure.com {
 
+    root * /srv
+    file_server
+
+    try_files {path} /index.html
+
     handle_path /api/* {
         reverse_proxy api:5000
-    }
-
-    handle {
-        root * /usr/share/caddy
-        try_files {path} /index.html
-        reverse_proxy frontend:80
-        
     }
 
     header {
