@@ -6,7 +6,7 @@ import {
 } from '../types/analysis';
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.toString() || 'http://localhost:5000';
+  import.meta.env.VITE_API_BASE_URL?.toString() || 'http://20.40.58.238:5000';
 
 const client = axios.create({
   baseURL: API_BASE_URL,
