@@ -3,20 +3,28 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify, send_from_directory,make_response
 from flask_cors import CORS 
 from tasks import analyze_audio_task, celery
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Load environment variables from .env file
 load_dotenv()
-
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[]
+)
 app = Flask(__name__)
 
 
 CORS(app)
+app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024 
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['RESULTS_FOLDER'] = 'results'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 @app.route('/upload', methods=['POST'])
+@limiter.limit("1 per 5 minutes")
 def upload_file():
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400

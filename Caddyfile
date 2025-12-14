@@ -1,0 +1,14 @@
+soniclab.centralindia.cloudapp.azure.com {
+
+    reverse_proxy /api/* api:5000
+    reverse_proxy frontend:80
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin
+    }
+
+    encode gzip
+}
