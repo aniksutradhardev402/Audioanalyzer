@@ -3,11 +3,15 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify, send_from_directory,make_response
 from flask_cors import CORS 
 from tasks import analyze_audio_task, celery
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
+
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 CORS(app)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['RESULTS_FOLDER'] = 'results'

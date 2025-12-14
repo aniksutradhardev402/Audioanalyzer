@@ -25,4 +25,4 @@ ENV PYTHONUNBUFFERED=1
 
 # use Gunicorn for the API webserver; bind to 0.0.0.0:5000
 # The docker-compose service will run gunicorn for the web and celery for the worker (see compose file).
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app", "--workers", "2", "--threads", "4", "--log-level", "info"]
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]
