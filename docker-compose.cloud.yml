@@ -6,7 +6,7 @@ services:
     restart: always
 
   api:
-    build: .
+    build: ./music-backend
     restart: always
     command: gunicorn -b 0.0.0.0:5000 app:app
     env_file: .env.cloud
@@ -17,7 +17,7 @@ services:
       - redis
 
   worker:
-    build: .
+    build: ./music-backend  
     restart: always
     command: celery -A tasks worker --loglevel=info
     env_file: .env.cloud
