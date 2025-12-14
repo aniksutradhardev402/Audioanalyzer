@@ -1,7 +1,7 @@
 soniclab.centralindia.cloudapp.azure.com {
 
     handle_path /api/*{
-    reverse_proxy /api/* api:5000
+    reverse_proxy api:5000
     }
     handle_path{
     reverse_proxy frontend:80
