@@ -35,17 +35,17 @@ Audioanalyzer/
 ---
 ---
 
-+## System Architecture
-+
-+The application follows a decoupled client-server architecture:
-+
-+1.  **Frontend**: Built with React, Vite, and Tailwind CSS. It handles user interactions, file uploads, and visualization of analysis results.
-+2.  **Backend**: A Flask (Python) API that processes audio files. It uses libraries like Librosa and Essentia for DSP (Digital Signal Processing) and ML tasks.
-+3.  **Async Processing**: Heavy analysis tasks are offloaded to Celery workers to ensure API responsiveness.
-+4.  **Containerization**: Services are containerized using Docker for consistent deployment.
-+
-+---
-+
+## System Architecture
+
+The application follows a decoupled client-server architecture:
+
+1.  **Frontend**: Built with React, Vite, and Tailwind CSS. It handles user interactions, file uploads, and visualization of analysis results.
+2.  **Backend**: A Flask (Python) API that processes audio files. It uses libraries like Librosa and Essentia for DSP (Digital Signal Processing) and ML tasks.
+3.  **Async Processing**: Heavy analysis tasks are offloaded to Celery workers to ensure API responsiveness.
+4.  **Containerization**: Services are containerized using Docker for consistent deployment.
+
+---
+
 
 ## Quick Start
 
